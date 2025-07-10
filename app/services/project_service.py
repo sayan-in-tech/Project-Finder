@@ -56,7 +56,7 @@ class ProjectGenerationService:
             )
             
             # Convert the raw data to ProjectIdea models
-            return [self._convert_to_project_idea(project_data) for project_data in projects_data]
+            return [self._convert_to_project_idea(project_data, company_name) for project_data in projects_data]
             
         except Exception as e:
             print(f"Error generating projects for {company_name}: {e}")
@@ -80,7 +80,7 @@ class ProjectGenerationService:
                 'difficulty': project.difficulty,
                 'estimated_duration': project.estimated_duration,
                 'tech_stack': project.tech_stack,
-                'learning_outcomes': project.learning_outcomes,
+                'demo_hook': project.demo_hook,
                 'challenge_id': project.challenge_id,
                 'challenge_title': project.challenge_title
             }
@@ -103,7 +103,7 @@ class ProjectGenerationService:
             )
             
             # Convert the refined data back to ProjectIdea model
-            return self._convert_to_project_idea(refined_project_data)
+            return self._convert_to_project_idea(refined_project_data, company_name)
             
         except Exception as e:
             print(f"Error refining project {project.title}: {e}")
@@ -150,16 +150,16 @@ class ProjectGenerationService:
             print(f"Error getting project suggestions: {e}")
             return []
     
-    def _convert_to_project_idea(self, data: dict) -> ProjectIdea:
+    def _convert_to_project_idea(self, data: dict, company_name: str = "Unknown Company") -> ProjectIdea:
         """Convert raw project data to ProjectIdea model"""
         return ProjectIdea(
-            id=data.get('id', 'project_1'),
             title=data.get('title', 'Project Title'),
             description=data.get('description', 'Project description'),
+            tech_stack=data.get('tech_stack', []),
+            demo_hook=data.get('demo_hook', 'Demonstrate the core functionality and technical implementation'),
             difficulty=data.get('difficulty', 'intermediate'),
             estimated_duration=data.get('estimated_duration', '2-3 months'),
-            tech_stack=data.get('tech_stack', []),
-            learning_outcomes=data.get('learning_outcomes', []),
             challenge_id=data.get('challenge_id', 'challenge_1'),
-            challenge_title=data.get('challenge_title', 'Challenge Title')
+            challenge_title=data.get('challenge_title', 'Challenge Title'),
+            company_name=company_name
         )

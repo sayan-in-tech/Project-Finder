@@ -98,15 +98,16 @@ class CompanyAnalysisService:
         tech_stack = TechStack(
             backend=tech_stack_data.get('backend', []),
             frontend=tech_stack_data.get('frontend', []),
-            databases=tech_stack_data.get('databases', []),
+            database=tech_stack_data.get('database', []),
             cloud=tech_stack_data.get('cloud', [])
         )
         
         return CompanyProfile(
             name=data.get('name', 'Unknown Company'),
-            industry=IndustryType(data.get('industry', 'Technology')),
-            size=CompanySize(data.get('size', 'medium')),
+            industry=IndustryType(data.get('industry', 'technology')),
+            size=CompanySize(data.get('size', 'scaleup')),
             description=data.get('description', ''),
+            business_focus=data.get('business_focus', 'Technology innovation and digital transformation'),
             tech_stack=tech_stack
         )
     
