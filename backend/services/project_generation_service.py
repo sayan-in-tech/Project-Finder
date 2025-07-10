@@ -31,7 +31,7 @@ class ProjectGenerationService:
         company_name: str,
         company_profile: CompanyProfile,
         challenges: List[EngineeringChallenge],
-        ideas_per_challenge: int = 4,
+        total_ideas: int = 4,
         user_skills: Optional[List[str]] = None
     ) -> List[ProjectIdea]:
         """
@@ -41,7 +41,7 @@ class ProjectGenerationService:
             company_name: Name of the target company
             company_profile: Analyzed company profile
             challenges: List of engineering challenges
-            ideas_per_challenge: Number of ideas to generate per challenge
+            total_ideas: Total number of ideas to generate (not per challenge)
             user_skills: Optional list of user's technical skills
             
         Returns:
@@ -49,13 +49,20 @@ class ProjectGenerationService:
         """
         all_projects = []
         
-        for challenge in challenges:
+        # Calculate ideas per challenge to distribute evenly
+        ideas_per_challenge = max(1, total_ideas // len(challenges))
+        remaining_ideas = total_ideas % len(challenges)
+        
+        for i, challenge in enumerate(challenges):
             try:
+                # Distribute remaining ideas to first few challenges
+                current_ideas = ideas_per_challenge + (1 if i < remaining_ideas else 0)
+                
                 projects = self._generate_projects_for_challenge(
                     company_name=company_name,
                     company_profile=company_profile,
                     challenge=challenge,
-                    ideas_per_challenge=ideas_per_challenge,
+                    ideas_per_challenge=current_ideas,
                     user_skills=user_skills
                 )
                 all_projects.extend(projects)

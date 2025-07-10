@@ -258,14 +258,14 @@ class APIClient:
     def __init__(self, base_url: str):
         self.base_url = base_url
     
-    def analyze_company(self, company_name: str, api_key: str, user_skills: List[str] = None, ideas_per_challenge: int = 4) -> Dict:
+    def analyze_company(self, company_name: str, api_key: str, user_skills: List[str] = None, total_ideas: int = 4) -> Dict:
         """Analyze a company using the backend API"""
         url = f"{self.base_url}/api/analyze-company"
         payload = {
             "company_name": company_name,
             "api_key": api_key,
             "user_skills": user_skills or [],
-            "ideas_per_challenge": ideas_per_challenge
+            "ideas_per_challenge": total_ideas
         }
         
         response = requests.post(url, json=payload)
@@ -433,51 +433,61 @@ def main():
         st.info("💡 Start the backend server with: `python -m backend.server`")
         return
     
-    # Sidebar controls with modern design
-    st.sidebar.markdown("""
+    # Main controls section
+    st.markdown("""
     <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
-                padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid #cbd5e0;">
+                padding: 2rem; border-radius: 16px; margin: 2rem 0; border: 1px solid #cbd5e0;">
         <h3 style="margin: 0; color: #2d3748; text-align: center;">🎯 Project Settings</h3>
         <p style="margin: 0.5rem 0 0 0; color: #718096; text-align: center; font-size: 0.9rem;">Customize your project generation</p>
     </div>
     """, unsafe_allow_html=True)
     
     # API Key status and change button
-    if api_key:
-        st.sidebar.success("✅ API Key: Configured")
-        if st.sidebar.button("🔑 Change API Key", type="secondary", use_container_width=True):
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        if api_key:
+            st.success("✅ API Key: Configured")
+        else:
+            st.error("❌ API Key: Not configured")
+    
+    with col2:
+        if st.button("🔑 Change API Key", type="secondary", use_container_width=True):
             st.session_state.api_key = ""
             st.rerun()
-    else:
-        st.sidebar.error("❌ API Key: Not configured")
     
-    # Number of ideas selector with better styling
-    st.sidebar.markdown("### 📊 Generation Settings")
-    ideas_count = st.sidebar.selectbox(
-        "💡 Ideas per challenge:",
-        options=[4, 6, 8, 10, 12],
-        index=0,  # Default to 4
-        help="Choose how many project ideas to generate for each engineering challenge"
-    )
+    # Project settings in columns
+    col1, col2 = st.columns(2)
     
-    # Show total expected projects
-    st.sidebar.info(f"📈 Expected output: ~{ideas_count * 3} projects per company (3 challenges × {ideas_count} ideas)")
+    with col1:
+        st.markdown("### 📊 Generation Settings")
+        
+        # Number of ideas selector with radio buttons
+        ideas_count = st.radio(
+            "💡 Ideas per challenge:",
+            options=[2, 4, 6, 8, 10, 12],
+            index=1,  # Default to 4 (now index 1 since 2 is at index 0)
+            help="Choose how many project ideas to generate for each engineering challenge",
+            horizontal=True
+        )
+        
+        # Show total expected projects (literal count)
+        st.info(f"📈 Expected output: {ideas_count} projects per company ({ideas_count} ideas total)")
     
-    # Company input with better design
-    st.sidebar.markdown("### 🏢 Target Company")
-    company_name = st.sidebar.text_input(
-        "Enter company name:",
-        placeholder="Google, Microsoft, OpenAI, Netflix, Uber, Spotify",
-        help="Enter the company you're interested in working for"
-    )
+    with col2:
+        st.markdown("### 🏢 Target Company")
+        company_name = st.text_input(
+            "Enter company name:",
+            placeholder="Google, Microsoft, OpenAI, Netflix, Uber, Spotify",
+            help="Enter the company you're interested in working for"
+        )
+        
+        # Company indicator
+        if company_name.strip():
+            st.success(f"🎯 Company: {company_name}")
     
-    # Company count indicator
-    if company_name.strip():
-        st.sidebar.success(f"🎯 Company: {company_name}")
-    
-    # Optional skills input with improved design
-    st.sidebar.markdown("### 🛠️ Your Skills")
-    user_skills = st.sidebar.text_input(
+    # Skills section
+    st.markdown("### 🛠️ Your Skills")
+    user_skills = st.text_input(
         "Your technical skills (optional):",
         placeholder="Python, React, Machine Learning, AWS, Docker",
         help="This will help tailor project suggestions to your strengths"
@@ -486,15 +496,15 @@ def main():
     # Skills preview
     if user_skills.strip():
         skills_list = [skill.strip() for skill in user_skills.split(',') if skill.strip()]
-        st.sidebar.info(f"🔧 {len(skills_list)} skills detected: {', '.join(skills_list[:3])}{'...' if len(skills_list) > 3 else ''}")
+        st.info(f"🔧 {len(skills_list)} skills detected: {', '.join(skills_list[:3])}{'...' if len(skills_list) > 3 else ''}")
     
-    # Action buttons with modern styling
-    st.sidebar.markdown("### 🚀 Actions")
+    # Action buttons
+    st.markdown("### 🚀 Actions")
     
     # Disable generate button if no company or no API key
     can_generate = bool(api_key and company_name.strip())
     
-    col1, col2 = st.sidebar.columns(2)
+    col1, col2 = st.columns(2)
     
     with col1:
         generate_btn = st.button(
@@ -514,13 +524,12 @@ def main():
     
     # Show generation info
     if can_generate and company_name.strip():
-        estimated_projects = 3 * ideas_count
-        st.sidebar.markdown(f"""
+        st.markdown(f"""
         <div style="background: #e6fffa; padding: 1rem; border-radius: 8px; border-left: 4px solid #38b2ac; margin-top: 1rem;">
             <strong style="color: #2c7a7b;">Ready to Generate!</strong><br>
             <span style="color: #285e61; font-size: 0.9rem;">
                 🎯 {company_name}<br>
-                📊 ~{estimated_projects} total projects<br>
+                📊 {ideas_count} total projects<br>
                 ⏱️ ~30s estimated time
             </span>
         </div>
@@ -572,7 +581,7 @@ def main():
                     company_name=company,
                     api_key=api_key,
                     user_skills=skills_list,
-                    ideas_per_challenge=ideas_count
+                    total_ideas=ideas_count
                 )
                 
                 progress_bar.progress(0.6)
@@ -702,7 +711,7 @@ def main():
                                 company_name=company,
                                 api_key=api_key,
                                 user_skills=skills_list,
-                                ideas_per_challenge=ideas_count
+                                total_ideas=ideas_count
                             )
                             
                             # Convert and update projects
