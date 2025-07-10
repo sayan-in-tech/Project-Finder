@@ -20,8 +20,8 @@ import traceback
 print(f"[DEBUG] sys.executable: {sys.executable}")
 print(f"[DEBUG] sys.path: {sys.path}")
 
-# Add utils to path so we can import cleanup
-sys.path.append(str(Path(__file__).parent / "utils"))
+# Add backend/utils to path so we can import cleanup
+sys.path.append(str(Path(__file__).parent / "backend" / "utils"))
 
 # Global variables for process management
 backend_process = None
@@ -104,12 +104,13 @@ def check_dependencies():
         "fastapi": "Backend API framework", 
         "uvicorn": "ASGI server",
         "pydantic": "Data validation",
-        "pydantic-settings": "Settings management",
+        "pydantic_settings": "Settings management",  # Note: hyphen becomes underscore in import
         "requests": "HTTP client",
-        "python-dotenv": "Environment management"
+        "dotenv": "Environment management"  # Note: python-dotenv imports as dotenv
     }
     
     missing_deps = []
+    failed_imports = []
     
     for dep, description in dependencies.items():
         try:
@@ -117,12 +118,34 @@ def check_dependencies():
             ColorPrint.print_success(f"{dep}: {description}")
         except ImportError as e:
             missing_deps.append(dep)
+            failed_imports.append((dep, str(e)))
             ColorPrint.print_error(f"{dep}: {description} - NOT FOUND")
+            log_error(f"Dependency Check - {dep}", e, "start.py", "check_dependencies")
+        except Exception as e:
+            missing_deps.append(dep)
+            failed_imports.append((dep, str(e)))
+            ColorPrint.print_error(f"{dep}: {description} - ERROR")
             log_error(f"Dependency Check - {dep}", e, "start.py", "check_dependencies")
     
     if missing_deps:
         ColorPrint.print_error(f"Missing dependencies: {', '.join(missing_deps)}")
         ColorPrint.print_info("Run: pip install -r requirements.txt")
+        
+        # Additional debugging information
+        ColorPrint.print_info("Debugging information:")
+        ColorPrint.print_info(f"Python executable: {sys.executable}")
+        ColorPrint.print_info(f"Python path: {sys.path[:3]}...")  # Show first 3 entries
+        
+        # Check if virtual environment is activated
+        if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+            ColorPrint.print_success("Virtual environment is active")
+        else:
+            ColorPrint.print_warning("No virtual environment detected")
+        
+        # Show failed import details
+        for dep, error in failed_imports:
+            ColorPrint.print_info(f"  {dep}: {error}")
+        
         return False
     
     return True
@@ -134,8 +157,7 @@ def check_project_structure():
         ("frontend/", "Frontend directory"),
         ("backend/main.py", "Backend main file"),
         ("frontend/app.py", "Frontend app file"),
-        ("requirements.txt", "Dependencies file"),
-        ("env.example", "Environment template")
+        ("requirements.txt", "Dependencies file")
     ]
     
     missing_paths = []
@@ -185,8 +207,14 @@ GEMINI_API_KEY=your_api_key_here
             return False
         
         # Load and validate environment
-        from dotenv import load_dotenv
-        load_dotenv()
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError as e:
+            log_error("Environment Setup", e, "start.py", "setup_environment")
+            ColorPrint.print_error("python-dotenv not installed")
+            ColorPrint.print_info("Run: pip install python-dotenv")
+            return False
         
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key or api_key == "your_api_key_here":
@@ -198,11 +226,6 @@ GEMINI_API_KEY=your_api_key_here
         ColorPrint.print_success("Environment configuration loaded")
         return True
         
-    except ImportError as e:
-        log_error("Environment Setup", e, "start.py", "setup_environment")
-        ColorPrint.print_error("python-dotenv not installed")
-        ColorPrint.print_info("Run: pip install python-dotenv")
-        return False
     except Exception as e:
         log_error("Environment Setup", e, "start.py", "setup_environment")
         return False
@@ -425,10 +448,12 @@ def main():
         try:
             from cleanup import cleanup_before_run
             cleanup_before_run()
-        except ImportError:
+        except ImportError as e:
             ColorPrint.print_warning("Could not import cleanup utility")
+            log_error("Cleanup Import", e, "start.py", "main")
         except Exception as e:
             ColorPrint.print_warning(f"Pre-cleanup failed: {e}")
+            log_error("Pre-cleanup", e, "start.py", "main")
         
         # .env and API key check (from run.py)
         if not Path(".env").exists():
@@ -448,8 +473,9 @@ def main():
                 ColorPrint.print_warning("Please set your Gemini API key in the .env file")
                 ColorPrint.print_info("Get your API key from: https://makersuite.google.com/app/apikey")
                 return
-        except ImportError:
+        except ImportError as e:
             ColorPrint.print_warning("python-dotenv not installed. Install with: pip install python-dotenv")
+            log_error("Dotenv Import", e, "start.py", "main")
             return
         
         # Step 1: Check Python version
@@ -522,10 +548,12 @@ def main():
         try:
             from cleanup import cleanup_after_run
             cleanup_after_run()
-        except ImportError:
+        except ImportError as e:
             ColorPrint.print_warning("Could not import cleanup utility")
+            log_error("Cleanup Import", e, "start.py", "main")
         except Exception as e:
             ColorPrint.print_warning(f"Post-cleanup failed: {e}")
+            log_error("Post-cleanup", e, "start.py", "main")
 
 if __name__ == "__main__":
     main() 
