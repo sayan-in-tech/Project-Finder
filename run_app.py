@@ -13,82 +13,12 @@ import signal
 import atexit
 from pathlib import Path
 
-# Import cache cleaner
-sys.path.append(str(Path(__file__).parent / "backend" / "utils"))
-from cache_cleaner import clean_pycache
-
-def check_api_health(base_url: str, max_retries: int = 30) -> bool:
-    """Check if the API is healthy and ready"""
-    for i in range(max_retries):
-        try:
-            response = requests.get(f"{base_url}/health", timeout=2)
-            if response.status_code == 200:
-                print("✅ Backend API is ready!")
-                return True
-        except requests.exceptions.RequestException:
-            pass
-        
-        if i < max_retries - 1:
-            print(f"⏳ Waiting for backend API... ({i+1}/{max_retries})")
-            time.sleep(2)
-    
-    return False
-
-def install_dependencies():
-    """Install required dependencies"""
-    print("📦 Checking dependencies...")
-    try:
-        subprocess.run([
-            sys.executable, "-m", "pip", "install", "-r", "requirements.txt"
-        ], check=True, capture_output=True)
-        print("✅ Dependencies installed/updated")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to install dependencies: {e}")
-        return False
-    return True
-
-def start_backend():
-    """Start the backend server in a separate thread"""
-    try:
-        # Start backend server (API key will be passed from frontend)
-        subprocess.run([
-            sys.executable, "-m", "backend.server"
-        ], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Backend server error: {e}")
-        sys.exit(1)
-    except KeyboardInterrupt:
-        print("\n🛑 Backend server stopped")
-
-def start_frontend():
-    """Start the frontend server"""
-    try:
-        # Start frontend
-        subprocess.run([
-            sys.executable, "-m", "streamlit", "run", "frontend/streamlit_app.py",
-            "--server.port", "8501",
-            "--server.address", "localhost"
-        ], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Frontend error: {e}")
-        sys.exit(1)
-    except KeyboardInterrupt:
-        print("\n🛑 Frontend stopped")
-
-def cleanup_on_exit():
-    """Clean up cache and other resources on exit"""
-    print("\n🧹 Cleaning up cache...")
-    try:
-        clean_pycache()
-        print("✅ Cache cleanup completed")
-    except Exception as e:
-        print(f"⚠️  Cache cleanup warning: {e}")
-
-def signal_handler(signum, frame):
-    """Handle interrupt signals gracefully"""
-    print(f"\n🛑 Received signal {signum}, shutting down gracefully...")
-    cleanup_on_exit()
-    sys.exit(0)
+from backend.services.startup.check_api_health import check_api_health
+from backend.utils.cache_cleaner import clean_pycache
+from backend.services.startup.install_dependencies import install_dependencies
+from backend.services.startup.start_backend import start_backend
+from backend.services.startup.start_frontend import start_frontend
+from backend.services.startup.signal_handler import signal_handler
 
 def main():
     """Main launcher function"""
@@ -105,7 +35,7 @@ def main():
         print(f"⚠️  Startup cache cleanup warning: {e}")
     
     # Register cleanup function to run on exit
-    atexit.register(cleanup_on_exit)
+    atexit.register(clean_pycache)
     
     # Register signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
@@ -157,7 +87,7 @@ def main():
         start_frontend()
     except KeyboardInterrupt:
         print("\n🛑 Shutting down Project Finder...")
-        cleanup_on_exit()
+        clean_pycache()
         print("✅ Both servers stopped")
 
 if __name__ == "__main__":

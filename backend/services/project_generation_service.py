@@ -13,7 +13,7 @@ from ..models.models import (
     ProjectGenerationRequest,
     ProjectGenerationResponse
 )
-from ..prompts.project_generation import PROJECT_GENERATION_PROMPT, PROJECT_REFINEMENT_PROMPT
+from ..prompts.prompts import PROJECT_GENERATION_PROMPT, PROJECT_REFINEMENT_PROMPT
 
 logger = logging.getLogger(__name__)
 

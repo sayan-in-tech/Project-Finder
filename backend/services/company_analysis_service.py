@@ -13,7 +13,7 @@ from ..models.models import (
     CompanySize, 
     TechStack
 )
-from ..prompts.company_analysis import COMPANY_PROFILE_PROMPT, ENGINEERING_CHALLENGES_PROMPT
+from ..prompts.prompts import COMPANY_PROFILE_PROMPT, ENGINEERING_CHALLENGES_PROMPT
 
 logger = logging.getLogger(__name__)
 

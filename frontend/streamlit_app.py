@@ -47,7 +47,7 @@ st.markdown("""
     
     .main-title {
         font-family: 'Inter', sans-serif;
-        font-size: 3.5rem;
+        font-size: 2.5rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
@@ -329,7 +329,8 @@ def main():
     st.markdown("""
     <div class="main-header">
         <div class="main-title">🚀 Project Finder</div>
-        <div class="main-subtitle">Discover AI-powered side projects tailored for your dream companies</div>
+        <div class="main-subtitle">Made with ❤️ by Sayan Ghosh</div>
+        
     </div>
     """, unsafe_allow_html=True)
     
@@ -341,15 +342,6 @@ def main():
         st.error("❌ Backend API is not available. Please ensure the backend server is running.")
         st.info("💡 Start the backend server with: `python -m backend.server`")
         return
-    
-    # Main controls section
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
-                padding: 2rem; border-radius: 16px; margin: 2rem 0; border: 1px solid #cbd5e0;">
-        <h3 style="margin: 0; color: #2d3748; text-align: center;">🎯 Project Settings</h3>
-        <p style="margin: 0.5rem 0 0 0; color: #718096; text-align: center; font-size: 0.9rem;">Customize your project generation</p>
-    </div>
-    """, unsafe_allow_html=True)
     
     # API Key setup with button
     st.markdown("### 🔑 API Key Setup")
@@ -392,15 +384,12 @@ def main():
             horizontal=True,
             key="ideas_radio"
         )
-        
-        # Show total expected projects (literal count)
-        st.info(f"📈 Expected output: {ideas_count} projects per company ({ideas_count} ideas total)")
     
     with col2:
         st.markdown("### 🏢 Target Company")
         company_name = st.text_input(
             "Enter company name:",
-            placeholder="Google, Microsoft, OpenAI, Netflix, Uber, Spotify",
+            placeholder="Google, Microsoft, OpenAI, Netflix, Uber, etc.",
             help="Enter the company you're interested in working for",
             key="company_input"
         )
@@ -810,28 +799,6 @@ Total Projects: {len(st.session_state.projects)}
                 mime="text/markdown",
                 use_container_width=True
             )
-    
-    # Footer with modern design
-    st.markdown("""
-    <div style="margin-top: 4rem; padding: 2rem; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
-                border-radius: 16px; text-align: center; border: 1px solid #e5e7eb;">
-        <h4 style="color: #374151; margin-bottom: 1rem;">🎯 Pro Tips for Success</h4>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-top: 1rem;">
-            <div style="background: white; padding: 1rem; border-radius: 8px; border-left: 4px solid #10b981;">
-                <strong style="color: #059669;">💼 Portfolio Strategy:</strong><br>
-                <span style="color: #6b7280;">Pick 2-3 projects that showcase different skills and build them incrementally.</span>
-            </div>
-            <div style="background: white; padding: 1rem; border-radius: 8px; border-left: 4px solid #3b82f6;">
-                <strong style="color: #1d4ed8;">🚀 Demo Excellence:</strong><br>
-                <span style="color: #6b7280;">Focus on live demos, clear documentation, and measurable results.</span>
-            </div>
-            <div style="background: white; padding: 1rem; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                <strong style="color: #d97706;">🎯 Interview Prep:</strong><br>
-                <span style="color: #6b7280;">Prepare to explain your technical choices and project impact.</span>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main() 
