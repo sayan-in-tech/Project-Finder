@@ -1,28 +1,65 @@
-# Project Finder 🚀
+# Project Finder - Modular Architecture
 
-A minimal, AI-powered Streamlit app that helps users discover custom side project ideas tailored to specific companies. Perfect for job seekers who want to showcase relevant skills and win interviews.
+An AI-powered side project generator that helps users discover custom side projects for target companies using Google's Gemini API to showcase relevant skills and win interviews.
 
-## ✨ Features
+## 🏗️ Architecture Overview
 
-- **Company Analysis**: Get AI-powered company profiles including industry, tech stack, and recent highlights
-- **Challenge Identification**: Discover 3 common engineering challenges each company faces
-- **Project Generation**: Generate 3-5 concrete project ideas per challenge with:
-  - Clear project titles and descriptions
-  - Recommended tech stacks
-  - Demo hooks that impress interviewers
-- **Export Options**: Download results as JSON or CSV
-- **Clean UI**: Intuitive Streamlit interface with expandable cards and organized layouts
+This project has been refactored into a clean, modular architecture with clear separation of concerns:
 
-## 🚀 Quick Start
+### Frontend (Streamlit)
+- **Location**: `frontend/streamlit_app.py`
+- **Purpose**: Pure UI layer with no business logic
+- **Features**: Modern, responsive interface that communicates with backend via REST API
+- **Dependencies**: Only UI-related libraries (Streamlit, requests)
+
+### Backend (Flask API)
+- **Location**: `backend/`
+- **Purpose**: All business logic and AI processing
+- **Structure**:
+  - `models/`: Pydantic models for data validation
+  - `services/`: Business logic services
+  - `prompts/`: AI prompts management
+  - `routes/`: API endpoints
+  - `server.py`: Flask server
+
+### Key Benefits
+1. **Separation of Concerns**: Frontend and backend are completely independent
+2. **Scalability**: Easy to add new features or change AI providers
+3. **Maintainability**: Clear structure makes code easy to understand and modify
+4. **Reusability**: Backend API can be used by other frontends (web, mobile, etc.)
+
+## 📁 Project Structure
+
+```
+Project-Finder/
+├── frontend/
+│   └── streamlit_app.py          # Pure UI layer
+├── backend/
+│   ├── models/
+│   │   └── models.py             # Pydantic data models
+│   ├── services/
+│   │   ├── company_analysis_service.py    # Company analysis logic
+│   │   └── project_generation_service.py  # Project generation logic
+│   ├── prompts/
+│   │   ├── company_analysis.py   # Company analysis prompts
+│   │   └── project_generation.py # Project generation prompts
+│   ├── routes/
+│   │   └── api_routes.py         # Flask API endpoints
+│   └── server.py                 # Flask server
+├── run_app.py                    # Unified launcher script
+├── requirements.txt              # Updated dependencies
+└── README.md                    # Comprehensive documentation
+```
+
+## 🚀 Getting Started
 
 ### Prerequisites
-
-- Python 3.8 or higher
-- Google Gemini API key (free from [Google AI Studio](https://makersuite.google.com/app/apikey))
+1. Python 3.8+
+2. Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 
 ### Installation
 
-1. **Clone or download this repository**
+1. **Clone the repository**
    ```bash
    git clone <repository-url>
    cd Project-Finder
@@ -33,147 +70,175 @@ A minimal, AI-powered Streamlit app that helps users discover custom side projec
    pip install -r requirements.txt
    ```
 
-3. **Set up your API key** (Choose one method):
-
-   **Method A: Using Streamlit secrets (Recommended)**
+3. **Set up your API key**
    ```bash
-   mkdir .streamlit
-   cp .streamlit/secrets.toml.example .streamlit/secrets.toml
-   ```
-   Edit `.streamlit/secrets.toml` and add your API key:
-   ```toml
-   GEMINI_API_KEY = "your_actual_api_key_here"
+   export GEMINI_API_KEY=your_api_key_here
    ```
 
-   **Method B: Environment variable**
-   ```bash
-   export GEMINI_API_KEY="your_actual_api_key_here"  # On Windows: set GEMINI_API_KEY=your_key
-   ```
+### Running the Application
 
-   **Method C: Enter in app**
-   You can also enter your API key directly in the app's sidebar
+#### Single Command Launch (Recommended)
 
-4. **Run the app**
-   ```bash
-   streamlit run app.py
-   ```
-
-5. **Open your browser** to `http://localhost:8501`
-
-## 📖 How to Use
-
-1. **Enter your Gemini API key** (if not configured in secrets)
-2. **Add company names** in the sidebar (one per line)
-3. **Optionally add your skills** to get more personalized suggestions
-4. **Click "Generate Ideas"** and wait for AI processing
-5. **Browse generated projects** organized by company
-6. **Export results** as JSON or CSV for future reference
-
-## 🎯 Example Output
-
-For a company like "Acme Analytics", you might get projects like:
-
-| Project | Tech Stack | Demo Hook |
-|---------|------------|-----------|
-| Real-time ETL Pipeline | Python, Kafka, S3 | Live dashboard with processed logs |
-| Data Quality Monitor | Python, Great Expectations, SQLite | Automated data validation reports |
-| Customer Churn Predictor | Python, scikit-learn, Streamlit | Interactive prediction dashboard |
-
-## 🏗️ Project Structure
-
-```
-Project-Finder/
-├── app.py                          # Main Streamlit application
-├── requirements.txt                # Python dependencies
-├── .streamlit/
-│   └── secrets.toml.example       # API key configuration template
-└── README.md                      # This file
+```bash
+python run_app.py
 ```
 
-## 🔧 Configuration
+This will:
+1. Start the backend API server on `http://localhost:5000`
+2. Wait for the backend to be ready
+3. Start the frontend on `http://localhost:8501`
+4. Open your browser automatically
 
-### API Key Security
+#### Alternative: Manual Launch
 
-- **Never commit your actual API key** to version control
-- Use `.streamlit/secrets.toml` for local development
-- For deployment, use environment variables or your platform's secret management
+If you prefer to run components separately:
 
-### Customization
+1. **Start the backend server**
+   ```bash
+   python -m backend.server
+   ```
+   The API will be available at `http://localhost:5000`
 
-The app is designed to be easily customizable:
+2. **Start the frontend** (in a new terminal)
+   ```bash
+   streamlit run frontend/streamlit_app.py
+   ```
+   The UI will be available at `http://localhost:8501`
 
-- **Modify prompts**: Edit the prompt templates in the `GeminiService` class
-- **Adjust UI**: Update the Streamlit layout in the `main()` function
-- **Add features**: Extend the `GeminiService` class or add new session state variables
+## 🔧 API Endpoints
 
-## 🌐 Deployment
+The backend provides the following REST API endpoints:
 
-### Streamlit Community Cloud
+- `POST /api/analyze-company` - Analyze a company and generate projects
+- `GET /api/company-profile/<company_name>` - Get company profile only
+- `GET /api/engineering-challenges/<company_name>` - Get engineering challenges
+- `POST /api/generate-projects` - Generate projects for specific challenges
+- `POST /api/refine-project` - Refine an existing project idea
+- `GET /health` - Health check endpoint
 
-1. Fork this repository
-2. Connect your GitHub account to [Streamlit Community Cloud](https://share.streamlit.io/)
-3. Deploy the app and add your `GEMINI_API_KEY` in the app secrets
+## 🏢 Company Analysis Layer
 
-### Other Platforms
+The system now separates company data collection from idea generation:
 
-The app can be deployed to any platform that supports Python and Streamlit:
-- Heroku
-- Railway
-- Render
-- Google Cloud Run
-- AWS EC2
+### 1. Company Analysis Service
+- **Purpose**: Analyzes companies and extracts comprehensive profiles
+- **Features**:
+  - Industry classification
+  - Company size estimation
+  - Technology stack analysis
+  - Recent highlights and business focus
+  - Engineering challenges identification
 
-Just ensure your `GEMINI_API_KEY` environment variable is set.
+### 2. Project Generation Service
+- **Purpose**: Generates project ideas based on analyzed company data
+- **Features**:
+  - Tailored project suggestions
+  - Difficulty and duration estimation
+  - Demo hook generation
+  - Technology stack recommendations
 
-## 🔍 Troubleshooting
+## 📊 Data Models
 
-### Common Issues
+The system uses comprehensive Pydantic models for data validation:
 
-1. **"API key not found"**
-   - Ensure your API key is properly set in `.streamlit/secrets.toml` or as an environment variable
-   - Verify the API key is valid and has proper permissions
+- `CompanyProfile`: Complete company information
+- `EngineeringChallenge`: Technical challenges the company faces
+- `ProjectIdea`: Generated project suggestions
+- `TechStack`: Categorized technology information
 
-2. **"Rate limit exceeded"**
-   - The app includes small delays between API calls
-   - For heavy usage, consider implementing more sophisticated rate limiting
+## 🎯 Key Features
 
-3. **"JSON parsing error"**
-   - This can happen if Gemini returns unexpected format
-   - The app includes fallback parsing, but some edge cases might need manual handling
+### Single Company Focus
+- Analyze one company at a time for deeper insights
+- More detailed company profiles
+- Better project relevance
 
-4. **Empty results**
-   - Try with well-known company names first
-   - Ensure your API key has sufficient quota
-   - Check if the company name is spelled correctly
+### Modular Prompt Management
+- All AI prompts are stored in `backend/prompts/`
+- Easy to modify and improve prompts
+- Version control for prompt changes
 
-### Performance Tips
+### Comprehensive Company Classification
+- Industry type classification
+- Company size estimation
+- Technology stack categorization
+- Business focus analysis
 
-- **Start with 1-2 companies** to test the app
-- **Use specific, well-known company names** for better results
-- **Clear results** before generating new ones to avoid confusion
+## 🔄 Development Workflow
+
+### Adding New Features
+
+1. **Backend Changes**:
+   - Add new models in `backend/models/`
+   - Create new services in `backend/services/`
+   - Add prompts in `backend/prompts/`
+   - Create API routes in `backend/routes/`
+
+2. **Frontend Changes**:
+   - Modify `frontend/streamlit_app.py`
+   - Update UI components
+   - Add new API calls
+
+### Modifying AI Prompts
+
+1. Edit prompts in `backend/prompts/`
+2. Test with the API endpoints
+3. Deploy changes
+
+### Adding New Services
+
+1. Create new service class in `backend/services/`
+2. Add corresponding API routes
+3. Update frontend to use new endpoints
+
+## 🧪 Testing
+
+### Backend Testing
+```bash
+# Test API endpoints
+curl http://localhost:5000/health
+curl -X POST http://localhost:5000/api/analyze-company \
+  -H "Content-Type: application/json" \
+  -d '{"company_name": "Google"}'
+```
+
+### Frontend Testing
+1. Start the backend server
+2. Run the frontend
+3. Test the UI functionality
+
+## 🚀 Deployment
+
+### Backend Deployment
+- Deploy Flask app to your preferred platform (Heroku, AWS, etc.)
+- Set environment variables for API keys
+- Configure CORS if needed
+
+### Frontend Deployment
+- Deploy Streamlit app to Streamlit Cloud or similar
+- Update API base URL in frontend code
+- Configure environment variables
 
 ## 🤝 Contributing
 
-This is designed as a minimal, single-file application. If you want to contribute:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-1. Keep changes focused and minimal
-2. Maintain the single-file architecture
-3. Test thoroughly with different company names
-4. Update documentation as needed
+## 📝 License
 
-## 📄 License
+This project is licensed under the MIT License.
 
-This project is open source and available under the [MIT License](LICENSE).
+## 🆘 Support
 
-## 🎯 Future Enhancements
-
-Potential improvements (while keeping it minimal):
-
-- **Skill-based filtering**: Use the optional skills input to filter project suggestions
-- **Project templates**: Generate basic README.md files for selected projects
-- **Interview prep**: Add talking points for each project
-- **Company data integration**: Light scraping for more accurate company information
+If you encounter any issues:
+1. Check the API health endpoint
+2. Verify your API key is correct
+3. Check the logs for error messages
+4. Open an issue on GitHub
 
 ---
 
-**Happy coding and good luck with your interviews! 🚀**
+**Happy coding! 🚀** 

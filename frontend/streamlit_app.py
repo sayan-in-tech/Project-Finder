@@ -1,15 +1,13 @@
 """
-Project Finder - AI-Powered Side Project Generator
-A Streamlit app that helps users discover custom side projects for target companies
-using Google's Gemini API to showcase relevant skills and win interviews.
+Project Finder - Modular Streamlit Frontend
+A clean frontend that uses the backend API for all business logic
 """
 
 import streamlit as st
-import google.generativeai as genai
+import requests
 import json
 import csv
 import io
-import os
 from typing import List, Dict, Optional
 from datetime import datetime
 import time
@@ -21,6 +19,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# API Configuration
+API_BASE_URL = "http://localhost:5000"  # Default Flask API URL
 
 # Custom CSS for modern UI
 st.markdown("""
@@ -251,179 +252,159 @@ if 'api_key' not in st.session_state:
 if 'processing' not in st.session_state:
     st.session_state.processing = False
 
-class GeminiService:
-    """Service class for interacting with Google Gemini API"""
+class APIClient:
+    """Client for interacting with the backend API"""
     
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+    def __init__(self, base_url: str):
+        self.base_url = base_url
     
-    def get_company_profile(self, company_name: str) -> str:
-        """Get a concise company profile including industry, tech stack, and recent highlights"""
-        prompt = f"""
-        Provide a concise profile for the company "{company_name}". Include:
-        1. Industry domain and business focus
-        2. Likely tech stack and technologies they use
-        3. Recent highlights, products, or news (if known)
+    def analyze_company(self, company_name: str, api_key: str, user_skills: List[str] = None, ideas_per_challenge: int = 4) -> Dict:
+        """Analyze a company using the backend API"""
+        url = f"{self.base_url}/api/analyze-company"
+        payload = {
+            "company_name": company_name,
+            "api_key": api_key,
+            "user_skills": user_skills or [],
+            "ideas_per_challenge": ideas_per_challenge
+        }
         
-        Keep it under 200 words and focus on information relevant for a job seeker.
-        """
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        return response.json()
+    
+    def get_company_profile(self, company_name: str) -> Dict:
+        """Get company profile only"""
+        url = f"{self.base_url}/api/company-profile/{company_name}"
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    
+    def get_engineering_challenges(self, company_name: str) -> List[Dict]:
+        """Get engineering challenges for a company"""
+        url = f"{self.base_url}/api/engineering-challenges/{company_name}"
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    
+    def generate_projects(self, company_name: str, challenges: List[str], user_skills: List[str] = None, ideas_per_challenge: int = 4) -> Dict:
+        """Generate projects for a company"""
+        url = f"{self.base_url}/api/generate-projects"
+        payload = {
+            "company_name": company_name,
+            "challenges": challenges,
+            "user_skills": user_skills or [],
+            "ideas_per_challenge": ideas_per_challenge
+        }
         
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        return response.json()
+    
+    def refine_project(self, project: Dict, company_name: str, challenge_description: str) -> Dict:
+        """Refine an existing project idea"""
+        url = f"{self.base_url}/api/refine-project"
+        payload = {
+            "project": project,
+            "company_name": company_name,
+            "challenge_description": challenge_description
+        }
+        
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        return response.json()
+    
+    def health_check(self) -> bool:
+        """Check if the API is healthy"""
         try:
-            response = self.model.generate_content(prompt)
-            return response.text
-        except Exception as e:
-            st.error(f"Error getting company profile: {str(e)}")
-            return ""
-    
-    def get_engineering_challenges(self, company_name: str, profile: str) -> List[str]:
-        """Identify 3 common engineering challenges for the company"""
-        prompt = f"""
-        Based on this company profile for {company_name}:
-        
-        {profile}
-        
-        List exactly 3 common engineering challenges or product areas this company likely faces.
-        Format as a numbered list. Keep each challenge description concise (1-2 sentences).
-        Focus on technical challenges that would be relevant for software engineers.
-        """
-        
-        try:
-            response = self.model.generate_content(prompt)
-            challenges = []
-            lines = response.text.strip().split('\n')
-            for line in lines:
-                if line.strip() and (line.strip().startswith(tuple('123456789')) or line.strip().startswith('*') or line.strip().startswith('-')):
-                    # Clean up the challenge text
-                    challenge = line.strip()
-                    # Remove numbering and bullet points
-                    challenge = challenge.lstrip('123456789.*- ')
-                    if challenge:
-                        challenges.append(challenge)
-            return challenges[:3]  # Ensure we only return 3 challenges
-        except Exception as e:
-            st.error(f"Error getting engineering challenges: {str(e)}")
-            return []
-    
-    def generate_project_ideas(self, company_name: str, challenges: List[str], ideas_per_challenge: int = 4) -> List[Dict]:
-        """Generate customizable number of project ideas for each challenge"""
-        all_projects = []
-        
-        for i, challenge in enumerate(challenges, 1):
-            prompt = f"""
-            For the company "{company_name}" and this engineering challenge:
-            
-            Challenge {i}: {challenge}
-            
-            Generate exactly {ideas_per_challenge} concrete side project ideas that someone could build to demonstrate relevant skills.
-            
-            For each project, provide:
-            - Title: A clear, catchy project name
-            - Description: Brief description (2-3 sentences)
-            - Tech Stack: Specific technologies/frameworks to use
-            - Demo Hook: What to show in an interview that would impress
-            
-            Format as JSON array like this:
-            [
-                {{
-                    "title": "Project Title",
-                    "description": "Brief description here",
-                    "tech_stack": "Technology, Framework, Database",
-                    "demo_hook": "What to demonstrate"
-                }}
-            ]
-            """
-            
-            try:
-                response = self.model.generate_content(prompt)
-                response_text = response.text.strip()
-                
-                # Extract JSON from response
-                if '```json' in response_text:
-                    json_start = response_text.find('```json') + 7
-                    json_end = response_text.find('```', json_start)
-                    json_text = response_text[json_start:json_end]
-                elif '[' in response_text and ']' in response_text:
-                    json_start = response_text.find('[')
-                    json_end = response_text.rfind(']') + 1
-                    json_text = response_text[json_start:json_end]
-                else:
-                    json_text = response_text
-                
-                try:
-                    projects = json.loads(json_text)
-                    for project in projects:
-                        project['company'] = company_name
-                        project['challenge'] = challenge
-                        project['challenge_number'] = i
-                    all_projects.extend(projects)
-                except json.JSONDecodeError:
-                    # Fallback: parse manually if JSON parsing fails
-                    st.warning(f"Could not parse JSON for challenge {i}, using fallback parsing")
-                    continue
-                    
-            except Exception as e:
-                st.error(f"Error generating project ideas for challenge {i}: {str(e)}")
-                continue
-        
-        return all_projects
+            url = f"{self.base_url}/health"
+            response = requests.get(url, timeout=5)
+            return response.status_code == 200
+        except:
+            return False
 
 def setup_api_key():
-    """Handle API key setup with modern UI"""
-    st.sidebar.markdown("""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; color: white; text-align: center;">
-        <h3 style="margin: 0; color: white;">🔑 API Configuration</h3>
-        <p style="margin: 0.5rem 0 0 0; opacity: 0.9; font-size: 0.9rem;">Secure access to Gemini AI</p>
-    </div>
-    """, unsafe_allow_html=True)
+    """Handle API key setup with modal popup"""
     
-    # Try multiple sources for API key
-    api_key = ""
+    # Check if API key is already set
+    if st.session_state.api_key:
+        return st.session_state.api_key
     
-    # 1. Try environment variable first
-    api_key = os.getenv('GEMINI_API_KEY', '')
-    
-    # 2. Try Streamlit secrets (safely)
-    if not api_key:
-        try:
-            if hasattr(st, 'secrets') and st.secrets:
-                api_key = st.secrets.get("GEMINI_API_KEY", "")
-        except Exception:
-            # Secrets file doesn't exist or can't be read, that's fine
-            pass
-    
-    # 3. If still no API key, ask user to input it
-    if not api_key:
-        api_key = st.sidebar.text_input(
-            "🔐 Enter your Gemini API Key:",
-            type="password",
-            value=st.session_state.api_key,
-            help="Get your API key from Google AI Studio",
-            placeholder="Your API key here..."
-        )
+    # Create a modal-like experience using columns and containers
+    with st.container():
+        # Overlay effect
+        st.markdown("""
+        <style>
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            max-width: 500px;
+            width: 90%;
+        }
+        </style>
+        """, unsafe_allow_html=True)
         
-        if api_key:
-            st.session_state.api_key = api_key
-        
-        # Help section
-        with st.sidebar.expander("❓ Need help getting an API key?"):
+        # Modal content
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
             st.markdown("""
-            **Quick Steps:**
-            1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-            2. Sign in with your Google account
-            3. Click "Create API Key"
-            4. Copy and paste it above
+            <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        border-radius: 16px; color: white; margin-bottom: 2rem;">
+                <h2 style="margin: 0; color: white;">🔑 API Key Required</h2>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Enter your Gemini API key to get started</p>
+            </div>
+            """, unsafe_allow_html=True)
             
-            **It's completely free!** 🎉
-            """)
-    else:
-        # If we found the API key from env/secrets, show a success message
-        st.sidebar.success("✅ API key loaded successfully")
-        st.sidebar.info("🔒 Your API key is securely configured")
+            # API key input
+            api_key = st.text_input(
+                "🔐 Enter your Gemini API Key:",
+                type="password",
+                placeholder="Your API key here...",
+                help="Get your API key from Google AI Studio"
+            )
+            
+            if api_key:
+                st.session_state.api_key = api_key
+                st.success("✅ API key saved successfully!")
+                st.rerun()
+            
+            # Help section
+            with st.expander("❓ Need help getting an API key?", expanded=False):
+                st.markdown("""
+                **Quick Steps:**
+                1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+                2. Sign in with your Google account
+                3. Click "Create API Key"
+                4. Copy and paste it above
+                
+                **It's completely free!** 🎉
+                """)
+            
+            # Get API key button
+            if st.button("🔑 Get Free API Key", type="secondary", use_container_width=True):
+                st.markdown("""
+                <script>
+                window.open('https://makersuite.google.com/app/apikey', '_blank');
+                </script>
+                """, unsafe_allow_html=True)
+                st.info("Opening Google AI Studio in a new tab...")
     
-    return api_key
+    return st.session_state.api_key
 
 def main():
     """Main application function"""
@@ -440,22 +421,17 @@ def main():
     api_key = setup_api_key()
     
     if not api_key:
-        st.markdown("""
-        <div style="text-align: center; padding: 2rem; background: #fef2f2; border-radius: 12px; border: 1px solid #fecaca;">
-            <h3 style="color: #dc2626; margin-bottom: 1rem;">🔑 API Key Required</h3>
-            <p style="color: #7f1d1d;">Please enter your Gemini API key in the sidebar to get started.</p>
-            <a href="https://makersuite.google.com/app/apikey" target="_blank" 
-               style="display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; 
-                      background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; 
-                      text-decoration: none; border-radius: 8px; font-weight: 600;">
-                Get Your Free API Key →
-            </a>
-        </div>
-        """, unsafe_allow_html=True)
+        # The modal will handle the API key input, so we just return here
         return
     
-    # Initialize Gemini service
-    gemini_service = GeminiService(api_key)
+    # Initialize API client
+    api_client = APIClient(API_BASE_URL)
+    
+    # Check API health
+    if not api_client.health_check():
+        st.error("❌ Backend API is not available. Please ensure the backend server is running.")
+        st.info("💡 Start the backend server with: `python -m backend.server`")
+        return
     
     # Sidebar controls with modern design
     st.sidebar.markdown("""
@@ -465,6 +441,15 @@ def main():
         <p style="margin: 0.5rem 0 0 0; color: #718096; text-align: center; font-size: 0.9rem;">Customize your project generation</p>
     </div>
     """, unsafe_allow_html=True)
+    
+    # API Key status and change button
+    if api_key:
+        st.sidebar.success("✅ API Key: Configured")
+        if st.sidebar.button("🔑 Change API Key", type="secondary", use_container_width=True):
+            st.session_state.api_key = ""
+            st.rerun()
+    else:
+        st.sidebar.error("❌ API Key: Not configured")
     
     # Number of ideas selector with better styling
     st.sidebar.markdown("### 📊 Generation Settings")
@@ -479,18 +464,16 @@ def main():
     st.sidebar.info(f"📈 Expected output: ~{ideas_count * 3} projects per company (3 challenges × {ideas_count} ideas)")
     
     # Company input with better design
-    st.sidebar.markdown("### 🏢 Target Companies")
-    company_input = st.sidebar.text_area(
-        "Enter company names (one per line):",
-        placeholder="Google\nMicrosoft\nOpenAI\nNetflix\nUber\nSpotify",
-        height=140,
-        help="Add companies you're interested in working for"
+    st.sidebar.markdown("### 🏢 Target Company")
+    company_name = st.sidebar.text_input(
+        "Enter company name:",
+        placeholder="Google, Microsoft, OpenAI, Netflix, Uber, Spotify",
+        help="Enter the company you're interested in working for"
     )
     
     # Company count indicator
-    if company_input.strip():
-        company_count = len([c.strip() for c in company_input.strip().split('\n') if c.strip()])
-        st.sidebar.success(f"🎯 {company_count} companies selected")
+    if company_name.strip():
+        st.sidebar.success(f"🎯 Company: {company_name}")
     
     # Optional skills input with improved design
     st.sidebar.markdown("### 🛠️ Your Skills")
@@ -508,8 +491,8 @@ def main():
     # Action buttons with modern styling
     st.sidebar.markdown("### 🚀 Actions")
     
-    # Disable generate button if no companies or no API key
-    can_generate = bool(api_key and company_input.strip())
+    # Disable generate button if no company or no API key
+    can_generate = bool(api_key and company_name.strip())
     
     col1, col2 = st.sidebar.columns(2)
     
@@ -519,7 +502,7 @@ def main():
             type="primary", 
             use_container_width=True,
             disabled=not can_generate,
-            help="Generate AI-powered project ideas" if can_generate else "Enter companies and API key first"
+            help="Generate AI-powered project ideas" if can_generate else "Enter company and API key first"
         )
     
     with col2:
@@ -530,25 +513,24 @@ def main():
         )
     
     # Show generation info
-    if can_generate and company_input.strip():
-        company_count = len([c.strip() for c in company_input.strip().split('\n') if c.strip()])
-        estimated_projects = company_count * 3 * ideas_count
+    if can_generate and company_name.strip():
+        estimated_projects = 3 * ideas_count
         st.sidebar.markdown(f"""
         <div style="background: #e6fffa; padding: 1rem; border-radius: 8px; border-left: 4px solid #38b2ac; margin-top: 1rem;">
             <strong style="color: #2c7a7b;">Ready to Generate!</strong><br>
             <span style="color: #285e61; font-size: 0.9rem;">
-                📊 {company_count} companies<br>
-                🎯 ~{estimated_projects} total projects<br>
-                ⏱️ ~{company_count * 30}s estimated time
+                🎯 {company_name}<br>
+                📊 ~{estimated_projects} total projects<br>
+                ⏱️ ~30s estimated time
             </span>
         </div>
         """, unsafe_allow_html=True)
     
-    # Process companies
-    if generate_btn and company_input.strip():
-        companies = [company.strip() for company in company_input.strip().split('\n') if company.strip()]
+    # Process company
+    if generate_btn and company_name.strip():
+        company = company_name.strip()
         
-        if companies:
+        if company:
             st.session_state.processing = True
             st.session_state.projects = []
             
@@ -563,64 +545,67 @@ def main():
                 # Create a beautiful status card
                 status_card = st.empty()
             
-            total_steps = len(companies) * 3  # 3 steps per company
-            current_step = 0
-            
-            for company_idx, company in enumerate(companies, 1):
-                try:
-                    # Update status card
-                    status_card.markdown(f"""
-                    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); 
-                                padding: 1.5rem; border-radius: 12px; border: 1px solid #93c5fd; margin: 1rem 0;">
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div>
-                                <h4 style="color: #1e40af; margin: 0;">Processing {company}</h4>
-                                <p style="color: #3730a3; margin: 0.5rem 0 0 0;">Company {company_idx} of {len(companies)}</p>
-                            </div>
-                            <div style="font-size: 2rem;">🏢</div>
+            try:
+                # Update status card
+                status_card.markdown(f"""
+                <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); 
+                            padding: 1.5rem; border-radius: 12px; border: 1px solid #93c5fd; margin: 1rem 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h4 style="color: #1e40af; margin: 0;">Processing {company}</h4>
+                            <p style="color: #3730a3; margin: 0.5rem 0 0 0;">Analyzing company and generating ideas</p>
                         </div>
+                        <div style="font-size: 2rem;">🏢</div>
                     </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Step 1: Get company profile
-                    status_text.markdown(f"**Step 1/3:** 📊 Analyzing {company} company profile...")
-                    profile = gemini_service.get_company_profile(company)
-                    current_step += 1
-                    progress_bar.progress(current_step / total_steps)
-                    
-                    if not profile:
-                        continue
-                    
-                    # Step 2: Get engineering challenges
-                    status_text.markdown(f"**Step 2/3:** 🔍 Identifying engineering challenges for {company}...")
-                    challenges = gemini_service.get_engineering_challenges(company, profile)
-                    current_step += 1
-                    progress_bar.progress(current_step / total_steps)
-                    
-                    if not challenges:
-                        continue
-                    
-                    # Step 3: Generate project ideas
-                    status_text.markdown(f"**Step 3/3:** 🚀 Generating {ideas_count} project ideas per challenge for {company}...")
-                    projects = gemini_service.generate_project_ideas(company, challenges, ideas_count)
-                    current_step += 1
-                    progress_bar.progress(current_step / total_steps)
-                    
-                    # Add profile and challenges to projects
-                    for project in projects:
-                        project['company_profile'] = profile
-                    
-                    st.session_state.projects.extend(projects)
-                    
-                    # Success feedback for this company
-                    status_text.markdown(f"✅ **Completed {company}** - Generated {len(projects)} projects!")
-                    
-                    # Small delay to avoid rate limiting
-                    time.sleep(0.5)
-                    
-                except Exception as e:
-                    st.error(f"❌ Error processing {company}: {str(e)}")
-                    continue
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Step 1: Analyze company
+                status_text.markdown(f"**Step 1/2:** 📊 Analyzing {company} company profile...")
+                progress_bar.progress(0.3)
+                
+                # Parse skills
+                skills_list = [skill.strip() for skill in user_skills.split(',') if skill.strip()] if user_skills else []
+                
+                # Call API to analyze company
+                analysis_result = api_client.analyze_company(
+                    company_name=company,
+                    api_key=api_key,
+                    user_skills=skills_list,
+                    ideas_per_challenge=ideas_count
+                )
+                
+                progress_bar.progress(0.6)
+                
+                # Step 2: Process results
+                status_text.markdown(f"**Step 2/2:** 🚀 Processing generated ideas...")
+                progress_bar.progress(0.8)
+                
+                # Convert API response to our format
+                projects = []
+                if 'project_ideas' in analysis_result:
+                    for project in analysis_result['project_ideas']:
+                        # Convert to the format expected by the frontend
+                        frontend_project = {
+                            'title': project.get('title', 'Untitled Project'),
+                            'description': project.get('description', ''),
+                            'tech_stack': ', '.join(project.get('tech_stack', [])),
+                            'demo_hook': project.get('demo_hook', ''),
+                            'company': company,
+                            'challenge': project.get('challenge_id', 'Unknown Challenge'),
+                            'difficulty': project.get('difficulty', 'intermediate'),
+                            'estimated_duration': project.get('estimated_duration', '1-2 months')
+                        }
+                        projects.append(frontend_project)
+                
+                st.session_state.projects = projects
+                progress_bar.progress(1.0)
+                
+                # Success feedback
+                status_text.markdown(f"✅ **Completed {company}** - Generated {len(projects)} projects!")
+                
+            except Exception as e:
+                st.error(f"❌ Error processing {company}: {str(e)}")
             
             # Clear progress elements
             progress_bar.empty()
@@ -630,9 +615,9 @@ def main():
             
             if st.session_state.projects:
                 st.balloons()  # Celebration animation!
-                st.success(f"🎉 Successfully generated {len(st.session_state.projects)} project ideas across {len(companies)} companies!")
+                st.success(f"🎉 Successfully generated {len(st.session_state.projects)} project ideas for {company}!")
             else:
-                st.warning("⚠️ No projects were generated. Please try again or check your company names.")
+                st.warning("⚠️ No projects were generated. Please try again or check your company name.")
     
     # Clear all projects
     if clear_btn:
@@ -643,7 +628,6 @@ def main():
     if st.session_state.projects:
         # Calculate stats
         total_projects = len(st.session_state.projects)
-        unique_companies = len(set(project['company'] for project in st.session_state.projects))
         unique_techs = len(set(tech.strip() for project in st.session_state.projects 
                               for tech in project.get('tech_stack', '').split(',')))
         
@@ -668,8 +652,8 @@ def main():
         with col2:
             st.markdown(f"""
             <div class="stat-item">
-                <span class="stat-number">{unique_companies}</span>
-                <span class="stat-label">Companies Analyzed</span>
+                <span class="stat-number">1</span>
+                <span class="stat-label">Company Analyzed</span>
             </div>
             """, unsafe_allow_html=True)
         
@@ -707,36 +691,45 @@ def main():
             with col2:
                 st.markdown("<br>", unsafe_allow_html=True)  # Spacing
                 if st.button(f"🔄 Regenerate", key=f"regen_{company}", help=f"Generate new ideas for {company}"):
-                    # Find the company in the input and regenerate
-                    company_list = [c.strip() for c in company_input.strip().split('\n') if c.strip()]
-                    if company in company_list:
-                        # Remove existing projects for this company
-                        st.session_state.projects = [p for p in st.session_state.projects if p['company'] != company]
-                        
-                        # Regenerate for this company
-                        with st.spinner(f"Regenerating ideas for {company}..."):
-                            try:
-                                profile = gemini_service.get_company_profile(company)
-                                if profile:
-                                    challenges = gemini_service.get_engineering_challenges(company, profile)
-                                    if challenges:
-                                        new_projects = gemini_service.generate_project_ideas(company, challenges, ideas_count)
-                                        for project in new_projects:
-                                            project['company_profile'] = profile
-                                        st.session_state.projects.extend(new_projects)
-                                        st.success(f"✨ Generated {len(new_projects)} new ideas for {company}!")
-                                        st.rerun()
-                            except Exception as e:
-                                st.error(f"Error regenerating for {company}: {str(e)}")
-            
-            # Company profile expander
-            if projects and 'company_profile' in projects[0]:
-                with st.expander(f"📊 View {company} Company Profile", expanded=False):
-                    st.markdown(f"""
-                    <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; line-height: 1.6;">
-                        {projects[0]['company_profile']}
-                    </div>
-                    """, unsafe_allow_html=True)
+                    # Regenerate for this company
+                    with st.spinner(f"Regenerating ideas for {company}..."):
+                        try:
+                            # Parse skills
+                            skills_list = [skill.strip() for skill in user_skills.split(',') if skill.strip()] if user_skills else []
+                            
+                            # Call API to regenerate
+                            analysis_result = api_client.analyze_company(
+                                company_name=company,
+                                api_key=api_key,
+                                user_skills=skills_list,
+                                ideas_per_challenge=ideas_count
+                            )
+                            
+                            # Convert and update projects
+                            new_projects = []
+                            if 'project_ideas' in analysis_result:
+                                for project in analysis_result['project_ideas']:
+                                    frontend_project = {
+                                        'title': project.get('title', 'Untitled Project'),
+                                        'description': project.get('description', ''),
+                                        'tech_stack': ', '.join(project.get('tech_stack', [])),
+                                        'demo_hook': project.get('demo_hook', ''),
+                                        'company': company,
+                                        'challenge': project.get('challenge_id', 'Unknown Challenge'),
+                                        'difficulty': project.get('difficulty', 'intermediate'),
+                                        'estimated_duration': project.get('estimated_duration', '1-2 months')
+                                    }
+                                    new_projects.append(frontend_project)
+                            
+                            # Replace projects for this company
+                            st.session_state.projects = [p for p in st.session_state.projects if p['company'] != company]
+                            st.session_state.projects.extend(new_projects)
+                            
+                            st.success(f"✨ Generated {len(new_projects)} new ideas for {company}!")
+                            st.rerun()
+                            
+                        except Exception as e:
+                            st.error(f"Error regenerating for {company}: {str(e)}")
             
             # Display projects in a modern grid
             for i in range(0, len(projects), 2):
@@ -775,6 +768,14 @@ def main():
                                         💡 {project.get('demo_hook', 'No demo hook provided')}
                                     </div>
                                 </div>
+                                
+                                <div class="project-section">
+                                    <div class="project-label">Difficulty & Duration</div>
+                                    <div class="project-content">
+                                        <strong>Difficulty:</strong> {project.get('difficulty', 'intermediate').title()}<br>
+                                        <strong>Duration:</strong> {project.get('estimated_duration', '1-2 months')}
+                                    </div>
+                                </div>
                             </div>
                             """, unsafe_allow_html=True)
             
@@ -806,7 +807,7 @@ def main():
         with col2:
             # CSV export
             csv_buffer = io.StringIO()
-            fieldnames = ['company', 'title', 'description', 'tech_stack', 'demo_hook', 'challenge']
+            fieldnames = ['company', 'title', 'description', 'tech_stack', 'demo_hook', 'challenge', 'difficulty', 'estimated_duration']
             writer = csv.DictWriter(csv_buffer, fieldnames=fieldnames)
             writer.writeheader()
             
@@ -817,7 +818,9 @@ def main():
                     'description': project.get('description', ''),
                     'tech_stack': project.get('tech_stack', ''),
                     'demo_hook': project.get('demo_hook', ''),
-                    'challenge': project.get('challenge', '')
+                    'challenge': project.get('challenge', ''),
+                    'difficulty': project.get('difficulty', ''),
+                    'estimated_duration': project.get('estimated_duration', '')
                 })
             
             st.download_button(
@@ -834,22 +837,22 @@ def main():
 
 Generated using Project Finder - AI-powered project discovery tool.
 
-## Companies Analyzed
-{', '.join(companies_projects.keys())}
+## Company Analyzed
+{company}
 
 ## Project Summary
 Total Projects: {len(st.session_state.projects)}
 
 """
-            for company, projects in companies_projects.items():
-                readme_content += f"\n## {company}\n\n"
-                for project in projects:
-                    readme_content += f"### {project.get('title', 'Untitled')}\n"
-                    readme_content += f"**Challenge:** {project.get('challenge', 'N/A')}\n\n"
-                    readme_content += f"**Description:** {project.get('description', 'N/A')}\n\n"
-                    readme_content += f"**Tech Stack:** {project.get('tech_stack', 'N/A')}\n\n"
-                    readme_content += f"**Demo Hook:** {project.get('demo_hook', 'N/A')}\n\n"
-                    readme_content += "---\n\n"
+            for project in st.session_state.projects:
+                readme_content += f"\n## {project.get('title', 'Untitled')}\n\n"
+                readme_content += f"**Challenge:** {project.get('challenge', 'N/A')}\n\n"
+                readme_content += f"**Description:** {project.get('description', 'N/A')}\n\n"
+                readme_content += f"**Tech Stack:** {project.get('tech_stack', 'N/A')}\n\n"
+                readme_content += f"**Demo Hook:** {project.get('demo_hook', 'N/A')}\n\n"
+                readme_content += f"**Difficulty:** {project.get('difficulty', 'N/A')}\n\n"
+                readme_content += f"**Duration:** {project.get('estimated_duration', 'N/A')}\n\n"
+                readme_content += "---\n\n"
             
             st.download_button(
                 label="📝 Download README",
@@ -882,4 +885,4 @@ Total Projects: {len(st.session_state.projects)}
     """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
-    main()
+    main() 
