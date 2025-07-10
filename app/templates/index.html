@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Finder - AI-Powered Project Discovery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/static/css/main.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-rocket me-2"></i>
+                Project Finder
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#generate">Generate</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#projects">Projects</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/docs" target="_blank">API Docs</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-6">
+                        <h1 class="hero-title">
+                            <i class="fas fa-rocket text-primary me-3"></i>
+                            Project Finder
+                        </h1>
+                        <p class="hero-subtitle">
+                            AI-powered project discovery and generation platform
+                        </p>
+                        <p class="hero-description">
+                            Generate personalized project ideas based on real company challenges. 
+                            Perfect for building your portfolio and preparing for interviews.
+                        </p>
+                        <div class="hero-author">
+                            <i class="fas fa-heart text-danger me-2"></i>
+                            Made with love by <strong>Sayan Ghosh</strong>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="hero-image">
+                            <i class="fas fa-code hero-icon"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- API Key Section -->
+        <section class="api-key-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card api-key-card">
+                            <div class="card-body">
+                                <h3 class="card-title">
+                                    <i class="fas fa-key text-warning me-2"></i>
+                                    API Key Setup
+                                </h3>
+                                <p class="card-text">
+                                    Enter your Gemini API key to get started. 
+                                    <a href="https://aistudio.google.com/app/apikey" target="_blank">Get your API key here</a>
+                                </p>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-key"></i>
+                                    </span>
+                                    <input type="password" class="form-control" id="apiKey" placeholder="Enter your Gemini API key">
+                                    <button class="btn btn-primary" type="button" id="setApiKey">
+                                        <i class="fas fa-save me-2"></i>
+                                        Set API Key
+                                    </button>
+                                </div>
+                                <div class="api-key-status" id="apiKeyStatus">
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times me-1"></i>
+                                        API Key Required
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Generation Section -->
+        <section id="generate" class="generation-section">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card generation-card">
+                            <div class="card-body">
+                                <h3 class="card-title">
+                                    <i class="fas fa-building text-primary me-2"></i>
+                                    Generate Project Ideas
+                                </h3>
+                                
+                                <div class="mb-3">
+                                    <label for="companyName" class="form-label">Target Company</label>
+                                    <input type="text" class="form-control" id="companyName" 
+                                           placeholder="Google, Microsoft, OpenAI, Netflix, Uber, etc.">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="userSkills" class="form-label">Your Skills (Optional)</label>
+                                    <input type="text" class="form-control" id="userSkills" 
+                                           placeholder="Python, React, Machine Learning, AWS, Docker">
+                                    <div class="form-text">Comma-separated list of your technical skills</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="totalIdeas" class="form-label">Number of Ideas</label>
+                                    <select class="form-select" id="totalIdeas">
+                                        <option value="2">2 Ideas</option>
+                                        <option value="4" selected>4 Ideas</option>
+                                        <option value="6">6 Ideas</option>
+                                        <option value="8">8 Ideas</option>
+                                        <option value="10">10 Ideas</option>
+                                        <option value="12">12 Ideas</option>
+                                    </select>
+                                </div>
+
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button class="btn btn-outline-secondary me-md-2" type="button" id="clearAll">
+                                        <i class="fas fa-trash me-2"></i>
+                                        Clear All
+                                    </button>
+                                    <button class="btn btn-primary" type="button" id="generateIdeas">
+                                        <i class="fas fa-magic me-2"></i>
+                                        Generate Ideas
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card info-card">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-info-circle text-info me-2"></i>
+                                    How it Works
+                                </h5>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2">
+                                        <i class="fas fa-search text-primary me-2"></i>
+                                        Analyze company engineering challenges
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-brain text-success me-2"></i>
+                                        Generate AI-powered project ideas
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-code text-warning me-2"></i>
+                                        Get tech stack recommendations
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-download text-info me-2"></i>
+                                        Export projects for portfolio
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Section -->
+        <section id="loading" class="loading-section d-none">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card loading-card">
+                            <div class="card-body text-center">
+                                <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <h5 class="loading-title">Generating Your Custom Projects</h5>
+                                <p class="loading-description">This may take up to 30 seconds...</p>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div class="loading-steps">
+                                    <div class="step active">
+                                        <i class="fas fa-search me-2"></i>
+                                        Analyzing Company
+                                    </div>
+                                    <div class="step">
+                                        <i class="fas fa-brain me-2"></i>
+                                        Generating Ideas
+                                    </div>
+                                    <div class="step">
+                                        <i class="fas fa-check me-2"></i>
+                                        Finalizing Results
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects" class="projects-section">
+            <div class="container">
+                <div class="projects-header d-none">
+                    <div class="row align-items-center mb-4">
+                        <div class="col">
+                            <h2 class="projects-title">
+                                <i class="fas fa-lightbulb text-warning me-2"></i>
+                                Generated Projects
+                            </h2>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-outline-primary" id="exportProjects">
+                                <i class="fas fa-download me-2"></i>
+                                Export Projects
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stats-section d-none">
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-project-diagram"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 class="stat-number" id="totalProjects">0</h3>
+                                    <p class="stat-label">Projects Generated</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 class="stat-number" id="companiesAnalyzed">0</h3>
+                                    <p class="stat-label">Companies Analyzed</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-code"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 class="stat-number" id="technologiesSuggested">0</h3>
+                                    <p class="stat-label">Technologies Suggested</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="projects-grid" id="projectsGrid">
+                    <!-- Projects will be dynamically added here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6">
+                    <p class="footer-text">
+                        <i class="fas fa-heart text-danger me-2"></i>
+                        Made with love by <strong>Sayan Ghosh</strong>
+                    </p>
+                </div>
+                <div class="col-lg-6 text-lg-end">
+                    <a href="/docs" class="footer-link me-3">API Documentation</a>
+                    <a href="https://github.com/your-repo" class="footer-link">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
