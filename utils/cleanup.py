@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def find_pycache_dirs(root_path: str = ".") -> List[str]:
     """
-    Find all __pycache__ directories in the given root path.
+    Find all __pycache__ directories in the given root path, excluding .venv.
     
     Args:
         root_path (str): Root directory to search in
@@ -31,6 +31,10 @@ def find_pycache_dirs(root_path: str = ".") -> List[str]:
     pycache_dirs = []
     
     for root, dirs, files in os.walk(root_path):
+        # Skip .venv directory and its contents
+        if ".venv" in dirs:
+            dirs.remove(".venv")  # Don't traverse into .venv
+        
         if "__pycache__" in dirs:
             pycache_path = os.path.join(root, "__pycache__")
             pycache_dirs.append(pycache_path)
@@ -64,7 +68,7 @@ def remove_pycache_dirs(pycache_dirs: List[str]) -> int:
 
 def cleanup_pycache(root_path: str = ".") -> int:
     """
-    Clean up all Python cache files in the given directory.
+    Clean up all Python cache files in the given directory, excluding .venv.
     
     Args:
         root_path (str): Root directory to search for cache files
@@ -110,6 +114,7 @@ def main():
         root_path = "."
     
     logger.info(f"Starting cache cleanup in: {os.path.abspath(root_path)}")
+    logger.info("Note: .venv directory is excluded from cleanup")
     removed_count = cleanup_pycache(root_path)
     
     if removed_count > 0:

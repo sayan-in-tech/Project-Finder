@@ -16,6 +16,10 @@ from pathlib import Path
 from datetime import datetime
 import traceback
 
+# Log the Python executable and sys.path for debugging
+print(f"[DEBUG] sys.executable: {sys.executable}")
+print(f"[DEBUG] sys.path: {sys.path}")
+
 # Add utils to path so we can import cleanup
 sys.path.append(str(Path(__file__).parent / "utils"))
 
@@ -246,9 +250,9 @@ def start_backend():
         if not main_file.exists():
             raise FileNotFoundError("backend/main.py not found")
         
-        # Start backend process
+        # Always use sys.executable for subprocess calls
         cmd = [
-            sys.executable, 
+            sys.executable,  # Use the current Python interpreter
             "main.py"
         ]
         
@@ -298,9 +302,9 @@ def start_frontend():
         if not app_file.exists():
             raise FileNotFoundError("frontend/app.py not found")
         
-        # Start frontend process
+        # Always use sys.executable for subprocess calls
         cmd = [
-            sys.executable, 
+            sys.executable,  # Use the current Python interpreter
             "-m", "streamlit", 
             "run", 
             "app.py",
@@ -408,12 +412,14 @@ def main():
     global backend_process, frontend_process
     
     try:
-        ColorPrint.print_header("🚀 Project Finder - Enhanced Startup")
+        ColorPrint.print_header("🚀 Project Finder - Project Launcher")
         ColorPrint.print_header("=" * 60)
         
-        # Register signal handlers
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
+        # Check if we're in the right directory
+        if not Path("backend").exists() or not Path("frontend").exists():
+            ColorPrint.print_error("Please run this script from the project root directory")
+            ColorPrint.print_info("Make sure you're in the Project-Finder folder")
+            sys.exit(1)
         
         # Pre-cleanup: Remove Python cache files
         try:
@@ -423,6 +429,28 @@ def main():
             ColorPrint.print_warning("Could not import cleanup utility")
         except Exception as e:
             ColorPrint.print_warning(f"Pre-cleanup failed: {e}")
+        
+        # .env and API key check (from run.py)
+        if not Path(".env").exists():
+            ColorPrint.print_info("Creating .env file...")
+            env_content = """# Project Finder Environment Configuration\n# Add your Gemini API key below (required):\nGEMINI_API_KEY=your_api_key_here\n\n# Optional: Database URL (defaults to SQLite)\n# DATABASE_URL=sqlite:///./database/project_finder.db\n\n# Optional: Redis URL for caching (defaults to in-memory)\n# REDIS_URL=redis://localhost:6379\n\n# Optional: Debug mode (defaults to False)\n# DEBUG=True\n\n# Optional: Log level (defaults to INFO)\n# LOG_LEVEL=INFO\n"""
+            with open(".env", "w") as f:
+                f.write(env_content)
+            ColorPrint.print_success("Created .env file")
+            ColorPrint.print_warning("Please edit .env and add your Gemini API key")
+            ColorPrint.print_info("Get your API key from: https://makersuite.google.com/app/apikey")
+            return
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key or api_key == "your_api_key_here":
+                ColorPrint.print_warning("Please set your Gemini API key in the .env file")
+                ColorPrint.print_info("Get your API key from: https://makersuite.google.com/app/apikey")
+                return
+        except ImportError:
+            ColorPrint.print_warning("python-dotenv not installed. Install with: pip install python-dotenv")
+            return
         
         # Step 1: Check Python version
         ColorPrint.print_header("Step 1: Checking Python Version")
