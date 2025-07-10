@@ -57,7 +57,7 @@ def create_app(api_key: str = ""):
                 company_name=company_name,
                 company_profile=company_profile,
                 challenges=challenges,
-                total_ideas=data.get('ideas_per_challenge', 4),
+                total_ideas=data.get('total_ideas', 4),
                 user_skills=user_skills
             )
             

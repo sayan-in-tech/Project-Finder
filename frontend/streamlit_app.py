@@ -265,7 +265,7 @@ class APIClient:
             "company_name": company_name,
             "api_key": api_key,
             "user_skills": user_skills or [],
-            "ideas_per_challenge": total_ideas
+            "total_ideas": total_ideas
         }
         
         response = requests.post(url, json=payload)
@@ -322,90 +322,6 @@ class APIClient:
         except:
             return False
 
-def setup_api_key():
-    """Handle API key setup with modal popup"""
-    
-    # Check if API key is already set
-    if st.session_state.api_key:
-        return st.session_state.api_key
-    
-    # Create a modal-like experience using columns and containers
-    with st.container():
-        # Overlay effect
-        st.markdown("""
-        <style>
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-        }
-        .modal-content {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            z-index: 1001;
-            max-width: 500px;
-            width: 90%;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # Modal content
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown("""
-            <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                        border-radius: 16px; color: white; margin-bottom: 2rem;">
-                <h2 style="margin: 0; color: white;">🔑 API Key Required</h2>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Enter your Gemini API key to get started</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # API key input
-            api_key = st.text_input(
-                "🔐 Enter your Gemini API Key:",
-                type="password",
-                placeholder="Your API key here...",
-                help="Get your API key from Google AI Studio"
-            )
-            
-            if api_key:
-                st.session_state.api_key = api_key
-                st.success("✅ API key saved successfully!")
-                st.rerun()
-            
-            # Help section
-            with st.expander("❓ Need help getting an API key?", expanded=False):
-                st.markdown("""
-                **Quick Steps:**
-                1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-                2. Sign in with your Google account
-                3. Click "Create API Key"
-                4. Copy and paste it above
-                
-                **It's completely free!** 🎉
-                """)
-            
-            # Get API key button
-            if st.button("🔑 Get Free API Key", type="secondary", use_container_width=True):
-                st.markdown("""
-                <script>
-                window.open('https://makersuite.google.com/app/apikey', '_blank');
-                </script>
-                """, unsafe_allow_html=True)
-                st.info("Opening Google AI Studio in a new tab...")
-    
-    return st.session_state.api_key
-
 def main():
     """Main application function"""
     
@@ -416,13 +332,6 @@ def main():
         <div class="main-subtitle">Discover AI-powered side projects tailored for your dream companies</div>
     </div>
     """, unsafe_allow_html=True)
-    
-    # API Key Setup
-    api_key = setup_api_key()
-    
-    if not api_key:
-        # The modal will handle the API key input, so we just return here
-        return
     
     # Initialize API client
     api_client = APIClient(API_BASE_URL)
@@ -442,18 +351,31 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # API Key status and change button
+    # API Key setup with button
+    st.markdown("### 🔑 API Key Setup")
+    api_key_input = st.text_input(
+        "Enter your Gemini API Key:",
+        type="password",
+        placeholder="Your API key here...",
+        help="Get your API key from Google AI Studio",
+        key="api_key_input"
+    )
+    
     col1, col2 = st.columns([3, 1])
     with col1:
-        if api_key:
-            st.success("✅ API Key: Configured")
+        if api_key_input:
+            st.success("✅ API Key: Ready")
         else:
-            st.error("❌ API Key: Not configured")
+            st.error("❌ API Key: Required")
     
     with col2:
-        if st.button("🔑 Change API Key", type="secondary", use_container_width=True):
-            st.session_state.api_key = ""
-            st.rerun()
+        if st.button("🔑 Set API Key", type="secondary", use_container_width=True):
+            if api_key_input:
+                st.session_state.api_key = api_key_input
+                st.success("✅ API Key saved!")
+                st.rerun()
+            else:
+                st.error("❌ Please enter an API key first")
     
     # Project settings in columns
     col1, col2 = st.columns(2)
@@ -467,7 +389,8 @@ def main():
             options=[2, 4, 6, 8, 10, 12],
             index=1,  # Default to 4 (now index 1 since 2 is at index 0)
             help="Choose how many project ideas to generate for each engineering challenge",
-            horizontal=True
+            horizontal=True,
+            key="ideas_radio"
         )
         
         # Show total expected projects (literal count)
@@ -478,31 +401,24 @@ def main():
         company_name = st.text_input(
             "Enter company name:",
             placeholder="Google, Microsoft, OpenAI, Netflix, Uber, Spotify",
-            help="Enter the company you're interested in working for"
+            help="Enter the company you're interested in working for",
+            key="company_input"
         )
-        
-        # Company indicator
-        if company_name.strip():
-            st.success(f"🎯 Company: {company_name}")
     
     # Skills section
     st.markdown("### 🛠️ Your Skills")
     user_skills = st.text_input(
         "Your technical skills (optional):",
         placeholder="Python, React, Machine Learning, AWS, Docker",
-        help="This will help tailor project suggestions to your strengths"
+        help="This will help tailor project suggestions to your strengths",
+        key="skills_input"
     )
-    
-    # Skills preview
-    if user_skills.strip():
-        skills_list = [skill.strip() for skill in user_skills.split(',') if skill.strip()]
-        st.info(f"🔧 {len(skills_list)} skills detected: {', '.join(skills_list[:3])}{'...' if len(skills_list) > 3 else ''}")
     
     # Action buttons
     st.markdown("### 🚀 Actions")
     
     # Disable generate button if no company or no API key
-    can_generate = bool(api_key and company_name.strip())
+    can_generate = bool(api_key_input and company_name.strip())
     
     col1, col2 = st.columns(2)
     
@@ -522,7 +438,7 @@ def main():
             help="Clear all generated projects"
         )
     
-    # Show generation info
+    # Show generation info only when ready
     if can_generate and company_name.strip():
         st.markdown(f"""
         <div style="background: #e6fffa; padding: 1rem; border-radius: 8px; border-left: 4px solid #38b2ac; margin-top: 1rem;">
@@ -535,9 +451,10 @@ def main():
         </div>
         """, unsafe_allow_html=True)
     
-    # Process company
-    if generate_btn and company_name.strip():
+    # Process company only when generate button is clicked
+    if generate_btn and company_name.strip() and api_key_input:
         company = company_name.strip()
+        api_key = api_key_input
         
         if company:
             st.session_state.processing = True
@@ -602,6 +519,7 @@ def main():
                             'demo_hook': project.get('demo_hook', ''),
                             'company': company,
                             'challenge': project.get('challenge_id', 'Unknown Challenge'),
+                            'challenge_title': project.get('challenge_title', 'Unknown Challenge'),
                             'difficulty': project.get('difficulty', 'intermediate'),
                             'estimated_duration': project.get('estimated_duration', '1-2 months')
                         }
@@ -709,7 +627,7 @@ def main():
                             # Call API to regenerate
                             analysis_result = api_client.analyze_company(
                                 company_name=company,
-                                api_key=api_key,
+                                api_key=api_key_input,
                                 user_skills=skills_list,
                                 total_ideas=ideas_count
                             )
@@ -725,6 +643,7 @@ def main():
                                         'demo_hook': project.get('demo_hook', ''),
                                         'company': company,
                                         'challenge': project.get('challenge_id', 'Unknown Challenge'),
+                                        'challenge_title': project.get('challenge_title', 'Unknown Challenge'),
                                         'difficulty': project.get('difficulty', 'intermediate'),
                                         'estimated_duration': project.get('estimated_duration', '1-2 months')
                                     }
@@ -748,45 +667,65 @@ def main():
                     if i + j < len(projects):
                         project = projects[i + j]
                         
-                        # Parse tech stack for better display
-                        tech_items = [tech.strip() for tech in project.get('tech_stack', '').split(',')]
-                        tech_badges = ''.join([f'<span class="tech-stack">{tech}</span>' for tech in tech_items if tech])
-                        
                         with col:
-                            st.markdown(f"""
-                            <div class="project-card">
-                                <div class="project-title">{project.get('title', 'Untitled Project')}</div>
+                            # Project card container
+                            with st.container():
+                                st.markdown(f"""
+                                <div style="background: white; border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; 
+                                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); border: 1px solid #e0e7ff; 
+                                            position: relative; overflow: hidden;">
+                                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; 
+                                                background: linear-gradient(90deg, #667eea, #764ba2);"></div>
+                                """, unsafe_allow_html=True)
                                 
-                                <div class="project-challenge">
-                                    <strong>Challenge:</strong> {project.get('challenge', 'N/A')}
-                                </div>
+                                # Project title
+                                st.markdown(f"**{project.get('title', 'Untitled Project')}**")
                                 
-                                <div class="project-section">
-                                    <div class="project-label">Description</div>
-                                    <div class="project-content">{project.get('description', 'No description available')}</div>
+                                # Challenge
+                                st.markdown(f"""
+                                <div style="background: #f3f4f6; padding: 0.5rem 1rem; border-radius: 8px; 
+                                            font-size: 0.9rem; color: #6b7280; margin: 0.5rem 0; 
+                                            border-left: 4px solid #667eea;">
+                                    <strong>Challenge:</strong> {project.get('challenge_title', project.get('challenge', 'N/A'))}
                                 </div>
+                                """, unsafe_allow_html=True)
                                 
-                                <div class="project-section">
-                                    <div class="project-label">Tech Stack</div>
-                                    <div>{tech_badges}</div>
-                                </div>
+                                # Description
+                                st.markdown("**Description**")
+                                st.write(project.get('description', 'No description available'))
                                 
-                                <div class="project-section">
-                                    <div class="project-label">Demo Hook</div>
-                                    <div class="demo-hook">
-                                        💡 {project.get('demo_hook', 'No demo hook provided')}
-                                    </div>
-                                </div>
+                                # Tech Stack
+                                st.markdown("**Tech Stack**")
+                                tech_items = [tech.strip() for tech in project.get('tech_stack', '').split(',') if tech.strip()]
+                                if tech_items:
+                                    for tech in tech_items:
+                                        st.markdown(f"""
+                                        <span style="background: #eff6ff; color: #1e40af; padding: 0.3rem 0.8rem; 
+                                                    border-radius: 20px; font-size: 0.8rem; font-weight: 500; 
+                                                    display: inline-block; margin: 0.2rem 0.2rem 0.2rem 0;">
+                                            {tech}
+                                        </span>
+                                        """, unsafe_allow_html=True)
                                 
-                                <div class="project-section">
-                                    <div class="project-label">Difficulty & Duration</div>
-                                    <div class="project-content">
-                                        <strong>Difficulty:</strong> {project.get('difficulty', 'intermediate').title()}<br>
-                                        <strong>Duration:</strong> {project.get('estimated_duration', '1-2 months')}
-                                    </div>
+                                # Demo Hook
+                                st.markdown("**Demo Hook**")
+                                st.markdown(f"""
+                                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; 
+                                            padding: 0.8rem; color: #166534; font-style: italic;">
+                                    💡 {project.get('demo_hook', 'No demo hook provided')}
                                 </div>
-                            </div>
-                            """, unsafe_allow_html=True)
+                                """, unsafe_allow_html=True)
+                                
+                                # Difficulty & Duration
+                                st.markdown("**Difficulty & Duration**")
+                                st.markdown(f"""
+                                <div style="color: #4b5563; line-height: 1.6;">
+                                    <strong>Difficulty:</strong> {project.get('difficulty', 'intermediate').title()}<br>
+                                    <strong>Duration:</strong> {project.get('estimated_duration', '1-2 months')}
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<br><br>", unsafe_allow_html=True)
         
@@ -816,7 +755,7 @@ def main():
         with col2:
             # CSV export
             csv_buffer = io.StringIO()
-            fieldnames = ['company', 'title', 'description', 'tech_stack', 'demo_hook', 'challenge', 'difficulty', 'estimated_duration']
+            fieldnames = ['company', 'title', 'description', 'tech_stack', 'demo_hook', 'challenge', 'challenge_title', 'difficulty', 'estimated_duration']
             writer = csv.DictWriter(csv_buffer, fieldnames=fieldnames)
             writer.writeheader()
             
@@ -828,6 +767,7 @@ def main():
                     'tech_stack': project.get('tech_stack', ''),
                     'demo_hook': project.get('demo_hook', ''),
                     'challenge': project.get('challenge', ''),
+                    'challenge_title': project.get('challenge_title', ''),
                     'difficulty': project.get('difficulty', ''),
                     'estimated_duration': project.get('estimated_duration', '')
                 })
@@ -855,7 +795,7 @@ Total Projects: {len(st.session_state.projects)}
 """
             for project in st.session_state.projects:
                 readme_content += f"\n## {project.get('title', 'Untitled')}\n\n"
-                readme_content += f"**Challenge:** {project.get('challenge', 'N/A')}\n\n"
+                readme_content += f"**Challenge:** {project.get('challenge_title', project.get('challenge', 'N/A'))}\n\n"
                 readme_content += f"**Description:** {project.get('description', 'N/A')}\n\n"
                 readme_content += f"**Tech Stack:** {project.get('tech_stack', 'N/A')}\n\n"
                 readme_content += f"**Demo Hook:** {project.get('demo_hook', 'N/A')}\n\n"

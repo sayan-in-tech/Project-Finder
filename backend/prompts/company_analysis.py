@@ -55,24 +55,24 @@ Generate challenges that are:
 Return as a JSON array:
 [
     {{
-        "id": "challenge_1",
-        "title": "Challenge Title",
+        "id": "scalability_performance",
+        "title": "Scalability & Performance Optimization",
         "description": "Detailed description of the challenge (2-3 sentences)",
         "difficulty": "beginner|intermediate|advanced",
         "relevance_score": 0.85,
         "tech_areas": ["frontend", "backend", "ai_ml"]
     }},
     {{
-        "id": "challenge_2", 
-        "title": "Challenge Title",
+        "id": "data_analytics_ml", 
+        "title": "Data Analytics & Machine Learning",
         "description": "Detailed description of the challenge (2-3 sentences)",
         "difficulty": "beginner|intermediate|advanced",
         "relevance_score": 0.80,
         "tech_areas": ["database", "cloud", "devops"]
     }},
     {{
-        "id": "challenge_3",
-        "title": "Challenge Title", 
+        "id": "user_experience_mobile",
+        "title": "User Experience & Mobile Development", 
         "description": "Detailed description of the challenge (2-3 sentences)",
         "difficulty": "beginner|intermediate|advanced",
         "relevance_score": 0.75,
@@ -80,5 +80,5 @@ Return as a JSON array:
     }}
 ]
 
-Focus on challenges that would be impressive to demonstrate in a job interview.
+Focus on challenges that would be impressive to demonstrate in a job interview. Use specific, descriptive titles that reflect the actual challenge area.
 """ 

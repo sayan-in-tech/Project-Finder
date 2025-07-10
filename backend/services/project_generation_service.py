@@ -41,7 +41,7 @@ class ProjectGenerationService:
             company_name: Name of the target company
             company_profile: Analyzed company profile
             challenges: List of engineering challenges
-            total_ideas: Total number of ideas to generate (not per challenge)
+            total_ideas: Total number of ideas to generate (exact count)
             user_skills: Optional list of user's technical skills
             
         Returns:
@@ -49,20 +49,17 @@ class ProjectGenerationService:
         """
         all_projects = []
         
-        # Calculate ideas per challenge to distribute evenly
-        ideas_per_challenge = max(1, total_ideas // len(challenges))
-        remaining_ideas = total_ideas % len(challenges)
-        
-        for i, challenge in enumerate(challenges):
+        # Generate exactly total_ideas projects, cycling through challenges
+        for i in range(total_ideas):
+            # Cycle through challenges
+            challenge = challenges[i % len(challenges)]
+            
             try:
-                # Distribute remaining ideas to first few challenges
-                current_ideas = ideas_per_challenge + (1 if i < remaining_ideas else 0)
-                
                 projects = self._generate_projects_for_challenge(
                     company_name=company_name,
                     company_profile=company_profile,
                     challenge=challenge,
-                    ideas_per_challenge=current_ideas,
+                    ideas_per_challenge=1,  # Generate 1 project at a time
                     user_skills=user_skills
                 )
                 all_projects.extend(projects)
@@ -222,6 +219,7 @@ class ProjectGenerationService:
                         difficulty=project_data.get('difficulty', 'intermediate'),
                         estimated_duration=project_data.get('estimated_duration', '1-2 months'),
                         challenge_id=challenge.id,
+                        challenge_title=challenge.title,
                         company_name=company_name
                     )
                     projects.append(project)

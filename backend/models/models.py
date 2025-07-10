@@ -65,6 +65,7 @@ class ProjectIdea(BaseModel):
     difficulty: str = Field(..., description="Project difficulty level")
     estimated_duration: str = Field(..., description="Estimated time to complete")
     challenge_id: str = Field(..., description="Related engineering challenge ID")
+    challenge_title: str = Field(..., description="Related engineering challenge title")
     company_name: str = Field(..., description="Target company name")
     created_at: datetime = Field(default_factory=datetime.now, description="When idea was created")
 
