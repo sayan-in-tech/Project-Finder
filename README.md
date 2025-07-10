@@ -1,206 +1,179 @@
-# 🚀 Project Finder
+# Project Finder 🚀
 
-**Discover custom side-projects for target companies to showcase relevant skills and win interviews.**
-
-A comprehensive web application that uses AI to analyze companies and generate personalized project ideas that demonstrate relevant technical skills for job interviews.
+A minimal, AI-powered Streamlit app that helps users discover custom side project ideas tailored to specific companies. Perfect for job seekers who want to showcase relevant skills and win interviews.
 
 ## ✨ Features
 
-- **🤖 AI-Powered Analysis**: Uses Google Gemini AI to analyze companies and generate insights
-- **🎯 Targeted Projects**: Creates project ideas specifically tailored to each company's tech stack and challenges
-- **💾 Save & Share**: Save your workspace and share project ideas with others
-- **📊 Analytics**: Track your project generation and company analysis history
-- **⚡ Fast & Responsive**: Modern UI with real-time updates and caching
-- **🔧 Comprehensive Error Handling**: Detailed logging and error reporting for easy debugging
+- **Company Analysis**: Get AI-powered company profiles including industry, tech stack, and recent highlights
+- **Challenge Identification**: Discover 3 common engineering challenges each company faces
+- **Project Generation**: Generate 3-5 concrete project ideas per challenge with:
+  - Clear project titles and descriptions
+  - Recommended tech stacks
+  - Demo hooks that impress interviewers
+- **Export Options**: Download results as JSON or CSV
+- **Clean UI**: Intuitive Streamlit interface with expandable cards and organized layouts
 
 ## 🚀 Quick Start
 
-### One Command Setup
+### Prerequisites
 
-The easiest way to run the project:
+- Python 3.8 or higher
+- Google Gemini API key (free from [Google AI Studio](https://makersuite.google.com/app/apikey))
 
-```bash
-python run.py
-```
+### Installation
 
-This single command will:
-- ✅ Check all dependencies
-- ✅ Set up environment variables
-- ✅ Start both backend and frontend servers
-- ✅ Provide detailed error reporting
-- ✅ Monitor processes and handle crashes
+1. **Clone or download this repository**
+   ```bash
+   git clone <repository-url>
+   cd Project-Finder
+   ```
 
-### Manual Setup
-
-If you prefer manual setup:
-
-1. **Install dependencies:**
+2. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Set up environment:**
+3. **Set up your API key** (Choose one method):
+
+   **Method A: Using Streamlit secrets (Recommended)**
    ```bash
-   cp env.example .env
-   # Edit .env and add your Gemini API key
+   mkdir .streamlit
+   cp .streamlit/secrets.toml.example .streamlit/secrets.toml
+   ```
+   Edit `.streamlit/secrets.toml` and add your API key:
+   ```toml
+   GEMINI_API_KEY = "your_actual_api_key_here"
    ```
 
-3. **Run the application:**
+   **Method B: Environment variable**
    ```bash
-   python start.py
+   export GEMINI_API_KEY="your_actual_api_key_here"  # On Windows: set GEMINI_API_KEY=your_key
    ```
 
-## 🔧 Configuration
+   **Method C: Enter in app**
+   You can also enter your API key directly in the app's sidebar
 
-### Required Environment Variables
+4. **Run the app**
+   ```bash
+   streamlit run app.py
+   ```
 
-Create a `.env` file in the project root:
+5. **Open your browser** to `http://localhost:8501`
 
-```env
-# Required: Your Gemini API key
-GEMINI_API_KEY=your_api_key_here
+## 📖 How to Use
 
-# Optional: Database URL (defaults to SQLite)
-DATABASE_URL=sqlite:///./database/project_finder.db
+1. **Enter your Gemini API key** (if not configured in secrets)
+2. **Add company names** in the sidebar (one per line)
+3. **Optionally add your skills** to get more personalized suggestions
+4. **Click "Generate Ideas"** and wait for AI processing
+5. **Browse generated projects** organized by company
+6. **Export results** as JSON or CSV for future reference
 
-# Optional: Redis URL for caching (defaults to in-memory)
-REDIS_URL=redis://localhost:6379
+## 🎯 Example Output
 
-# Optional: Debug mode
-DEBUG=True
+For a company like "Acme Analytics", you might get projects like:
 
-# Optional: Log level
-LOG_LEVEL=INFO
-```
+| Project | Tech Stack | Demo Hook |
+|---------|------------|-----------|
+| Real-time ETL Pipeline | Python, Kafka, S3 | Live dashboard with processed logs |
+| Data Quality Monitor | Python, Great Expectations, SQLite | Automated data validation reports |
+| Customer Churn Predictor | Python, scikit-learn, Streamlit | Interactive prediction dashboard |
 
-### Getting Your Gemini API Key
-
-1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Create a new API key
-3. Add it to your `.env` file
-
-## 📁 Project Structure
+## 🏗️ Project Structure
 
 ```
 Project-Finder/
-├── backend/                 # FastAPI backend
-│   ├── api/                # API endpoints
-│   ├── core/               # Core configuration
-│   ├── models/             # Database models
-│   ├── services/           # Business logic
-│   └── utils/              # Utilities
-├── frontend/               # Streamlit frontend
-│   └── app.py             # Main frontend application
-├── database/               # SQLite database files
-├── logs/                   # Application logs
-├── tests/                  # Test suite
-├── start.py               # Enhanced startup script
-├── run.py                 # One-command runner
-└── requirements.txt       # Python dependencies
+├── app.py                          # Main Streamlit application
+├── requirements.txt                # Python dependencies
+├── .streamlit/
+│   └── secrets.toml.example       # API key configuration template
+└── README.md                      # This file
 ```
 
-## 🛠️ Development
+## 🔧 Configuration
 
-### Running Individual Components
+### API Key Security
 
-**Backend only:**
-```bash
-cd backend
-python main.py
-```
+- **Never commit your actual API key** to version control
+- Use `.streamlit/secrets.toml` for local development
+- For deployment, use environment variables or your platform's secret management
 
-**Frontend only:**
-```bash
-cd frontend
-streamlit run app.py
-```
+### Customization
 
-### Testing
+The app is designed to be easily customizable:
 
-```bash
-# Run all tests
-pytest
+- **Modify prompts**: Edit the prompt templates in the `GeminiService` class
+- **Adjust UI**: Update the Streamlit layout in the `main()` function
+- **Add features**: Extend the `GeminiService` class or add new session state variables
 
-# Run specific test file
-pytest tests/test_api.py
+## 🌐 Deployment
 
-# Run with coverage
-pytest --cov=backend
-```
+### Streamlit Community Cloud
 
-### Logging
+1. Fork this repository
+2. Connect your GitHub account to [Streamlit Community Cloud](https://share.streamlit.io/)
+3. Deploy the app and add your `GEMINI_API_KEY` in the app secrets
 
-The application uses structured logging with detailed error reporting:
+### Other Platforms
 
-- **Log files**: `logs/` directory
-- **Error tracking**: Detailed error context with file and function names
-- **Performance monitoring**: Request latency and cache statistics
+The app can be deployed to any platform that supports Python and Streamlit:
+- Heroku
+- Railway
+- Render
+- Google Cloud Run
+- AWS EC2
 
-## 🔍 Error Handling & Debugging
+Just ensure your `GEMINI_API_KEY` environment variable is set.
 
-The application includes comprehensive error handling:
+## 🔍 Troubleshooting
 
-### Startup Checks
-- ✅ Python version compatibility
-- ✅ Dependency verification
-- ✅ Project structure validation
-- ✅ Environment configuration
-- ✅ Port availability
-- ✅ Database connection
-- ✅ AI service initialization
+### Common Issues
 
-### Runtime Monitoring
-- 🔄 Process health monitoring
-- 📊 Performance metrics
-- 🚨 Automatic error recovery
-- 📝 Detailed error logging
+1. **"API key not found"**
+   - Ensure your API key is properly set in `.streamlit/secrets.toml` or as an environment variable
+   - Verify the API key is valid and has proper permissions
 
-### Debugging Tips
+2. **"Rate limit exceeded"**
+   - The app includes small delays between API calls
+   - For heavy usage, consider implementing more sophisticated rate limiting
 
-1. **Check logs**: Look in `logs/` directory for detailed error information
-2. **Verify API key**: Ensure your Gemini API key is correctly set
-3. **Check ports**: Make sure ports 8000 and 8501 are available
-4. **Database issues**: Check database permissions and connection strings
+3. **"JSON parsing error"**
+   - This can happen if Gemini returns unexpected format
+   - The app includes fallback parsing, but some edge cases might need manual handling
 
-## 🚀 Deployment
+4. **Empty results**
+   - Try with well-known company names first
+   - Ensure your API key has sufficient quota
+   - Check if the company name is spelled correctly
 
-### Local Development
-```bash
-python run.py
-```
+### Performance Tips
 
-### Production Deployment
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
-
-## 📊 API Endpoints
-
-- `GET /api/v1/profile?company={name}` - Get company profile
-- `GET /api/v1/challenges?company={name}` - Get engineering challenges
-- `GET /api/v1/ideas?company={name}` - Get project ideas
-- `GET /api/v1/health` - Health check
-- `GET /api/v1/metrics` - Performance metrics
+- **Start with 1-2 companies** to test the app
+- **Use specific, well-known company names** for better results
+- **Clear results** before generating new ones to avoid confusion
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+This is designed as a minimal, single-file application. If you want to contribute:
 
-## 📝 License
+1. Keep changes focused and minimal
+2. Maintain the single-file architecture
+3. Test thoroughly with different company names
+4. Update documentation as needed
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 📄 License
 
-## 🆘 Support
+This project is open source and available under the [MIT License](LICENSE).
 
-If you encounter any issues:
+## 🎯 Future Enhancements
 
-1. Check the logs in `logs/` directory
-2. Verify your environment configuration
-3. Ensure all dependencies are installed
-4. Check the API documentation at `http://localhost:8000/docs`
+Potential improvements (while keeping it minimal):
+
+- **Skill-based filtering**: Use the optional skills input to filter project suggestions
+- **Project templates**: Generate basic README.md files for selected projects
+- **Interview prep**: Add talking points for each project
+- **Company data integration**: Light scraping for more accurate company information
 
 ---
 
-**Made with ❤️ for developers looking to showcase their skills!** 
+**Happy coding and good luck with your interviews! 🚀**

@@ -1,20 +1,9 @@
-# Virtual Environment
-.venv/
-venv/
-env/
-
-# Environment Variables
-.env
-.env.local
-.env.production
-
-# Python Cache Files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+.streamlit/
 *.so
-
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -28,29 +17,20 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# PyInstaller
-*.manifest
-*.spec
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Logs
-logs/*.log
-*.log
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # IDE
 .vscode/
@@ -59,16 +39,17 @@ logs/*.log
 *.swo
 *~
 
+# Streamlit
+.streamlit/secrets.toml
+
 # OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
+# Logs
+*.log
+
+# API keys and secrets
+.env
+secrets.toml
+config.toml
