@@ -42,7 +42,7 @@ async def analyze_company(
         project_service = ProjectGenerationService(request.api_key)
         
         # Analyze company
-        company_profile = await company_service.analyze_company(request.company_name)
+        company_profile = await company_service.analyze_company(request.company_name, request.additional_info, request.website_url)
         if not company_profile:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

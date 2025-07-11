@@ -54,6 +54,7 @@ class CompanyProfile(BaseModel):
     business_focus: str = Field(..., description="Main business focus")
     challenges: List[str] = Field(default_factory=list, description="Engineering challenges")
     created_at: datetime = Field(default_factory=datetime.now, description="When profile was created")
+    additional_info: Optional[str] = Field(default=None, description="Additional information about the company, e.g. full website text.")
 
 
 class EngineeringChallenge(BaseModel):
@@ -88,6 +89,8 @@ class CompanyAnalysisRequest(BaseModel):
     user_skills: Optional[List[str]] = Field(default=None, description="User's technical skills")
     focus_areas: Optional[List[str]] = Field(default=None, description="Areas of interest")
     total_ideas: int = Field(default=4, description="Total number of project ideas to generate")
+    additional_info: Optional[str] = Field(default=None, description="Additional information about the company, e.g. full website text.")
+    website_url: Optional[str] = Field(default=None, description="Company website URL for automatic parsing.")
 
 
 class ProjectGenerationRequest(BaseModel):

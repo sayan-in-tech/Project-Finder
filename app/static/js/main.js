@@ -83,12 +83,16 @@ class ProjectFinder {
             const companyName = document.getElementById('companyName').value.trim();
             const userSkills = document.getElementById('userSkills').value.trim();
             const totalIdeas = parseInt(document.getElementById('totalIdeas').value);
+            const additionalInfo = document.getElementById('additionalInfo').value.trim();
+            const companyWebsite = document.getElementById('companyWebsite').value.trim();
 
             const requestData = {
                 company_name: companyName,
                 api_key: this.apiKey,
                 user_skills: userSkills ? userSkills.split(',').map(s => s.trim()) : [],
-                total_ideas: totalIdeas
+                total_ideas: totalIdeas,
+                additional_info: additionalInfo,
+                website_url: companyWebsite
             };
 
             this.updateLoadingProgress(30, 'Analyzing company...');

@@ -108,8 +108,8 @@
         <!-- Generation Section -->
         <section id="generate" class="generation-section">
             <div class="container">
-                <div class="row">
-                    <div class="col-lg-8">
+                <div class="row justify-content-center">
+                    <div class="col-12">
                         <div class="card generation-card">
                             <div class="card-body">
                                 <h3 class="card-title">
@@ -121,6 +121,18 @@
                                     <label for="companyName" class="form-label">Target Company</label>
                                     <input type="text" class="form-control" id="companyName" 
                                            placeholder="Google, Microsoft, OpenAI, Netflix, Uber, etc.">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="companyWebsite" class="form-label">Company Website (optional)</label>
+                                    <input type="url" class="form-control" id="companyWebsite" placeholder="https://example.com">
+                                    <div class="form-text">Paste the company website URL to let the AI analyze it for better context.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="additionalInfo" class="form-label">Additional Information (optional)</label>
+                                    <textarea class="form-control" id="additionalInfo" rows="5" placeholder="Paste extra info here..."></textarea>
+                                    <div class="form-text">This information will be used to give the AI more context about the company.</div>
                                 </div>
 
                                 <div class="mb-3">
@@ -152,35 +164,6 @@
                                         Generate Ideas
                                     </button>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-lg-4">
-                        <div class="card info-card">
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    <i class="fas fa-info-circle text-info me-2"></i>
-                                    How it Works
-                                </h5>
-                                <ul class="list-unstyled">
-                                    <li class="mb-2">
-                                        <i class="fas fa-search text-primary me-2"></i>
-                                        Analyze company engineering challenges
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="fas fa-brain text-success me-2"></i>
-                                        Generate AI-powered project ideas
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="fas fa-code text-warning me-2"></i>
-                                        Get tech stack recommendations
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="fas fa-download text-info me-2"></i>
-                                        Export projects for portfolio
-                                    </li>
-                                </ul>
                             </div>
                         </div>
                     </div>

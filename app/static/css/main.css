@@ -415,11 +415,19 @@ body {
     border-left: 4px solid var(--accent-success);
 }
 
+.loading-title, .loading-description {
+    color: #fff !important;
+}
+
 .loading-steps {
     display: flex;
     justify-content: space-around;
     margin-top: 2rem;
     gap: 1rem;
+}
+
+.loading-steps, .step {
+    color: #fff !important;
 }
 
 .step {
@@ -434,7 +442,8 @@ body {
 
 .step.active {
     background: var(--bg-gradient);
-    color: white;
+    color: #fff !important;
+    font-weight: bold;
     opacity: 1;
     box-shadow: var(--shadow-glow);
 }
