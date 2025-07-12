@@ -5,6 +5,11 @@ Gemini API service for AI-powered features
 import google.generativeai as genai
 from typing import List, Optional, Dict, Any
 import json
+from .prompts import (
+    COMPANY_ANALYSIS_PROMPT,
+    PROJECT_GENERATION_PROMPT,
+    PROJECT_REFINEMENT_PROMPT
+)
 
 
 class GeminiService:
@@ -14,42 +19,14 @@ class GeminiService:
         """Initialize the Gemini service with user-provided API key"""
         self.api_key = api_key
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
     
     def analyze_company(self, company_name: str) -> Dict[str, Any]:
         """
         Analyze a company and return its profile
         """
         try:
-            prompt = f"""
-            Analyze the company "{company_name}" and provide the following information in JSON format:
-            {{
-                "name": "Company name",
-                "industry": "technology/finance/healthcare/ecommerce/education/entertainment/transportation/real_estate/manufacturing/consulting/other",
-                "size": "startup/scaleup/enterprise/unknown",
-                "description": "Brief company description",
-                "business_focus": "Main business focus and primary revenue stream",
-                "tech_stack": {{
-                    "backend": ["tech1", "tech2"],
-                    "frontend": ["tech1", "tech2"],
-                    "database": ["db1", "db2"],
-                    "cloud": ["aws", "gcp", "azure"]
-                }},
-                "engineering_challenges": [
-                    {{
-                        "title": "Challenge title",
-                        "description": "Detailed description",
-                        "difficulty": "beginner/intermediate/advanced",
-                        "tech_areas": ["area1", "area2"]
-                    }}
-                ]
-            }}
-            
-            Important: 
-            - Use lowercase for industry (e.g., "technology" not "Technology") and use the exact size values listed above.
-            - Return ONLY the JSON object, no markdown formatting, no code blocks, no additional text.
-            - Focus on real engineering challenges that this company might face.
-            """
+            prompt = COMPANY_ANALYSIS_PROMPT.format(company_name=company_name)
             
             response = self.model.generate_content(prompt)
             
@@ -93,30 +70,12 @@ class GeminiService:
             skills_text = f"User skills: {', '.join(user_skills or [])}" if user_skills else "No specific skills mentioned"
             challenges_text = "\n".join([f"- {c['title']}: {c['description']}" for c in challenges])
             
-            prompt = f"""
-            Generate {total_ideas} project ideas for {company_name} based on these engineering challenges:
-            
-            {challenges_text}
-            
-            {skills_text}
-            
-            Return as JSON array:
-            [
-                {{
-                    "title": "Project title",
-                    "description": "Detailed project description",
-                    "difficulty": "beginner/intermediate/advanced",
-                    "estimated_duration": "2-3 months",
-                    "tech_stack": ["tech1", "tech2"],
-                    "demo_hook": "What to demonstrate in interview",
-                    "challenge_id": "challenge_1",
-                    "challenge_title": "Original challenge title"
-                }}
-            ]
-            
-            Important: Return ONLY the JSON array, no markdown formatting, no code blocks, no additional text.
-            Make projects practical and achievable.
-            """
+            prompt = PROJECT_GENERATION_PROMPT.format(
+                total_ideas=total_ideas,
+                company_name=company_name,
+                challenges_text=challenges_text,
+                skills_text=skills_text
+            )
             
             response = self.model.generate_content(prompt)
             
@@ -156,23 +115,13 @@ class GeminiService:
         Refine an existing project idea with additional context
         """
         try:
-            prompt = f"""
-            Refine this project idea for {company_name}:
-            
-            Current project: {project['title']}
-            Description: {project['description']}
-            
-            Challenge context: {challenge['title']} - {challenge['description']}
-            
-            Provide an improved version with:
-            - More detailed technical implementation
-            - Specific technologies to use
-            - Step-by-step development plan
-            - Success metrics
-            
-            Return as JSON with the same structure as the original project.
-            Important: Return ONLY the JSON object, no markdown formatting, no code blocks, no additional text.
-            """
+            prompt = PROJECT_REFINEMENT_PROMPT.format(
+                company_name=company_name,
+                project_title=project['title'],
+                project_description=project['description'],
+                challenge_title=challenge['title'],
+                challenge_description=challenge['description']
+            )
             
             response = self.model.generate_content(prompt)
             

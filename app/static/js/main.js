@@ -76,25 +76,55 @@ class ProjectFinder {
             return;
         }
 
+        // Preview token usage before proceeding
+        const companyName = document.getElementById('companyName').value.trim();
+        const userSkills = document.getElementById('userSkills').value.trim();
+        const totalIdeas = parseInt(document.getElementById('totalIdeas').value);
+        const additionalInfo = document.getElementById('additionalInfo').value.trim();
+        const companyWebsite = document.getElementById('companyWebsite').value.trim();
+
+        const requestData = {
+            company_name: companyName,
+            api_key: this.apiKey,
+            user_skills: userSkills ? userSkills.split(',').map(s => s.trim()) : [],
+            total_ideas: totalIdeas,
+            additional_info: additionalInfo,
+            website_url: companyWebsite
+        };
+
+        // Only preview if website is provided
+        if (companyWebsite) {
+            try {
+                const previewResponse = await fetch('/api/v1/companies/preview-tokens', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+                const previewData = await previewResponse.json();
+                const tokenCount = previewData.token_count?.total_tokens || previewData.token_count || 0;
+                const summary = previewData.summary || '';
+                let proceed = true;
+                if (tokenCount > 0) {
+                    proceed = confirm(
+                        `The website summary to be sent to Gemini is:\n\n"${summary.substring(0, 500)}${summary.length > 500 ? '...' : ''}"\n\nThis will use approximately ${tokenCount} tokens.\n\nDo you want to proceed?`
+                    );
+                }
+                if (!proceed) {
+                    this.showNotification('Generation cancelled by user.', 'info');
+                    return;
+                }
+                if (tokenCount > 8000) {
+                    this.showNotification('Warning: This will use a very high number of tokens and may exceed your free tier or quota!', 'warning');
+                }
+            } catch (err) {
+                this.showNotification('Could not preview token usage. Proceeding anyway.', 'warning');
+            }
+        }
+
         this.isLoading = true;
         this.showLoading();
 
         try {
-            const companyName = document.getElementById('companyName').value.trim();
-            const userSkills = document.getElementById('userSkills').value.trim();
-            const totalIdeas = parseInt(document.getElementById('totalIdeas').value);
-            const additionalInfo = document.getElementById('additionalInfo').value.trim();
-            const companyWebsite = document.getElementById('companyWebsite').value.trim();
-
-            const requestData = {
-                company_name: companyName,
-                api_key: this.apiKey,
-                user_skills: userSkills ? userSkills.split(',').map(s => s.trim()) : [],
-                total_ideas: totalIdeas,
-                additional_info: additionalInfo,
-                website_url: companyWebsite
-            };
-
             this.updateLoadingProgress(30, 'Analyzing company...');
 
             const response = await fetch('/api/v1/companies/analyze-company', {

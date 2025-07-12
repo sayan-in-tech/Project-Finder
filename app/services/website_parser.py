@@ -9,6 +9,8 @@ from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.lsa import LsaSummarizer
 import spacy
+import re
+from google import genai
 
 nlp = spacy.blank("en")  # Lightweight, just for sentence splitting
 nlp.add_pipe('sentencizer')
@@ -18,9 +20,30 @@ def normalize_url(url):
     parsed = urlparse(url)
     return parsed._replace(fragment='').geturl()
 
-def crawl_and_summarize_website(start_url, max_depth=1, max_chars=10000, summary_sentences=10):
+def clean_and_truncate_text(text, max_chars=2000):
     """
-    Crawl the website starting from start_url, extract text, and return a summary using NLP.
+    Clean and truncate text to reduce token usage.
+    """
+    # Remove extra whitespace and normalize
+    text = re.sub(r'\s+', ' ', text.strip())
+    # Remove common web artifacts
+    text = re.sub(r'cookie|privacy|terms|contact|login|signup', '', text, flags=re.IGNORECASE)
+    # Truncate to max_chars, preferably at sentence boundary
+    if len(text) > max_chars:
+        sentences = text.split('.')
+        truncated = ''
+        for sentence in sentences:
+            if len(truncated + sentence + '.') <= max_chars:
+                truncated += sentence + '.'
+            else:
+                break
+        return truncated.strip()
+    return text
+
+def crawl_and_summarize_website(start_url, max_depth=1, max_chars=5000, summary_sentences=5):
+    """
+    Crawl the website starting from start_url, extract text, and return a concise summary.
+    Optimized for token efficiency.
     """
     visited = set()
     domain = urlparse(start_url).netloc
@@ -41,11 +64,23 @@ def crawl_and_summarize_website(start_url, max_depth=1, max_chars=10000, summary
             return
         try:
             driver.get(url)
-            time.sleep(2)
+            time.sleep(1)  # Reduced wait time
             soup = BeautifulSoup(driver.page_source, 'html.parser')
-            texts = list(soup.stripped_strings)
-            page_text = '\n'.join(texts)
-            all_text.append(page_text)
+            # Remove script and style elements
+            for script in soup(["script", "style", "nav", "footer", "header"]):
+                script.decompose()
+            # Extract only main content areas
+            main_content = soup.find('main') or soup.find('article') or soup.find('div', class_=re.compile(r'content|main|body'))
+            if main_content:
+                texts = list(main_content.stripped_strings)
+            else:
+                texts = list(soup.stripped_strings)
+            page_text = ' '.join(texts)
+            if page_text:
+                all_text.append(page_text)
+            # Limit crawling to avoid excessive content
+            if len(all_text) >= 3:  # Only crawl first 3 pages
+                return
             for link in soup.find_all('a', href=True):
                 abs_url = normalize_url(urljoin(url, link['href']))
                 if abs_url not in visited and domain in abs_url:
@@ -59,20 +94,42 @@ def crawl_and_summarize_website(start_url, max_depth=1, max_chars=10000, summary
     extract_text(normalized_start)
     driver.quit()
 
-    full_text = '\n'.join(all_text)
+    full_text = ' '.join(all_text)
     if not full_text.strip():
         return None
-    # Use spaCy to split into sentences (fallback if sumy fails)
+
+    # Clean and truncate the text
+    cleaned_text = clean_and_truncate_text(full_text, max_chars=2000)
+
+    # Use spaCy for efficient summarization
     try:
-        parser = PlaintextParser.from_string(full_text, Tokenizer("english"))
-        summarizer = LsaSummarizer()
-        summary = summarizer(parser.document, summary_sentences)
-        summary_text = '\n'.join(str(sentence) for sentence in summary)
-        if summary_text.strip():
-            return summary_text
+        doc = nlp(cleaned_text)
+        sentences = list(doc.sents)
+        # Take only first few sentences for efficiency
+        summary_sentences = min(summary_sentences, len(sentences))
+        return ' '.join(str(s) for s in sentences[:summary_sentences])
     except Exception:
-        pass
-    # Fallback: return first N sentences
-    doc = nlp(full_text)
-    sentences = list(doc.sents)
-    return '\n'.join(str(s) for s in sentences[:summary_sentences]) 
+        # Fallback: return first 2000 characters
+        return cleaned_text[:2000]
+
+def preview_gemini_token_count(prompt, api_key=None, model="gemini-2.5-flash-lite-preview-06-17"):
+    """
+    Returns the number of tokens that would be sent to Gemini for a given prompt.
+    """
+    if api_key:
+        genai.configure(api_key=api_key)
+    client = genai.Client()
+    total_tokens = client.models.count_tokens(
+        model=model, contents=prompt
+    )
+    return total_tokens
+
+def crawl_summarize_and_preview_tokens(start_url, api_key=None, max_depth=1, max_chars=5000, summary_sentences=5, model="gemini-2.5-flash-lite-preview-06-17"):
+    """
+    Crawl and summarize the website, and return both the summary and the Gemini token count preview.
+    """
+    summary = crawl_and_summarize_website(start_url, max_depth=max_depth, max_chars=max_chars, summary_sentences=summary_sentences)
+    if not summary:
+        return {"summary": None, "token_count": 0}
+    token_count = preview_gemini_token_count(summary, api_key=api_key, model=model)
+    return {"summary": summary, "token_count": token_count} 

@@ -12,6 +12,7 @@ from ..models.schemas import (
     ErrorResponse
 )
 from ..services.company_service import CompanyAnalysisService
+from ..services.website_parser import crawl_summarize_and_preview_tokens
 
 router = APIRouter()
 
@@ -75,6 +76,33 @@ async def analyze_company(
         
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {str(e)}"
+        )
+
+
+@router.post(
+    "/preview-tokens",
+    response_model=dict,
+    summary="Preview Gemini Token Usage",
+    description="Preview the summary and Gemini token count before generating company analysis."
+)
+async def preview_tokens(
+    request: CompanyAnalysisRequest,
+):
+    """
+    Preview the summary and Gemini token count that would be sent to Gemini for company analysis.
+    """
+    try:
+        if not request.website_url:
+            return {"summary": None, "token_count": 0}
+        preview = crawl_summarize_and_preview_tokens(
+            start_url=request.website_url,
+            api_key=request.api_key
+        )
+        return preview
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
