@@ -279,14 +279,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## ⭐ Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=sayan-in-tech/Project-Finder&type=Date)](https://star-history.com/#sayan-in-tech/Project-Finder&Date)
-
----
-
-<div align="center">
-
 **Made with ❤️ by [Sayan Ghosh](https://github.com/sayan-in-tech)**
 
 [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/sayan-in-tech)
