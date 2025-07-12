@@ -10,7 +10,7 @@ from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.lsa import LsaSummarizer
 import spacy
 import re
-from google import genai
+import google.generativeai as genai
 
 nlp = spacy.blank("en")  # Lightweight, just for sentence splitting
 nlp.add_pipe('sentencizer')
@@ -118,11 +118,15 @@ def preview_gemini_token_count(prompt, api_key=None, model="gemini-2.5-flash-lit
     """
     if api_key:
         genai.configure(api_key=api_key)
-    client = genai.Client()
-    total_tokens = client.models.count_tokens(
-        model=model, contents=prompt
-    )
-    return total_tokens
+    try:
+        # Use the correct method for token counting
+        model_obj = genai.GenerativeModel(model)
+        response = model_obj.count_tokens(prompt)
+        return response
+    except Exception as e:
+        print(f"Error counting tokens: {e}")
+        # Fallback: estimate tokens (roughly 4 characters per token)
+        return len(prompt) // 4
 
 def crawl_summarize_and_preview_tokens(start_url, api_key=None, max_depth=1, max_chars=5000, summary_sentences=5, model="gemini-2.5-flash-lite-preview-06-17"):
     """
